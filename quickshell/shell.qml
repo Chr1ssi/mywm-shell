@@ -77,7 +77,7 @@ ShellRoot {
         id: panel
         screen: root.targetScreen()
         visible: true
-        implicitWidth: Math.min(680, (screen ? screen.width : 712) - 32)
+        implicitWidth: Math.min(640, (screen ? screen.width : 672) - 32)
         implicitHeight: Math.min(560, (screen ? screen.height : 592) - 32)
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
@@ -87,20 +87,20 @@ ShellRoot {
 
         Rectangle {
             anchors.fill: parent
-            radius: 14
+            radius: 0
             color: root.theme.backgroundColor
             border.width: 2
             border.color: root.theme.accentColor
 
             Column {
                 anchors.fill: parent
-                anchors.margins: 20
+                anchors.margins: root.theme.panelPadding
                 spacing: 12
 
                 Text {
-                    text: "Anwendungen"
+                    text: "ANWENDUNGEN"
                     color: root.theme.textColor
-                    font.pixelSize: 22
+                    font.family: root.theme.fontFamily; font.pixelSize: 12
                     font.bold: true
                 }
 
@@ -115,11 +115,11 @@ ShellRoot {
                     placeholderTextColor: root.theme.mutedColor
                     selectionColor: root.theme.accentColor
                     selectedTextColor: root.theme.backgroundColor
-                    font.pixelSize: 18
+                    font.family: root.theme.fontFamily; font.pixelSize: 16
                     focus: true
                     background: Rectangle {
                         color: root.theme.surfaceColor
-                        radius: 8
+                        radius: 0
                         border.color: root.theme.borderColor
                     }
                     Component.onCompleted: Qt.callLater(() => search.forceActiveFocus())
@@ -136,9 +136,9 @@ ShellRoot {
                 ListView {
                     id: list
                     width: parent.width
-                    height: Math.max(40, panel.height - 172)
+                    height: Math.max(40, panel.height - 148)
                     clip: true
-                    spacing: 4
+                    spacing: 2
                     model: root.results
                     currentIndex: root.selected
                     ScrollBar.vertical: ScrollBar {}
@@ -147,10 +147,10 @@ ShellRoot {
                         required property var modelData
                         required property int index
                         width: list.width
-                        height: 58
-                        radius: 7
-                        color: index === root.selected ? root.theme.surfaceColor : "transparent"
-                        border.width: index === root.selected ? 1 : 0
+                        height: 52
+                        radius: 0
+                        color: index === root.selected || rowMouse.containsMouse ? root.theme.surfaceColor : "transparent"
+                        border.width: 0
                         border.color: root.theme.accentColor
                         Image {
                             id: icon
@@ -172,17 +172,19 @@ ShellRoot {
                                 text: row.modelData.name
                                 elide: Text.ElideRight
                                 color: root.theme.textColor
-                                font.pixelSize: 16
+                                font.family: root.theme.fontFamily; font.pixelSize: 14
                             }
                             Text {
                                 width: parent.width
                                 text: row.modelData.genericName || row.modelData.comment || row.modelData.id
                                 elide: Text.ElideRight
                                 color: root.theme.mutedColor
-                                font.pixelSize: 12
+                                font.family: root.theme.fontFamily; font.pixelSize: 12
                             }
                         }
                         MouseArea {
+                            id: rowMouse
+                            hoverEnabled: true
                             anchors.fill: parent
                             onClicked: root.launch(row.index)
                         }
@@ -192,14 +194,16 @@ ShellRoot {
                         visible: root.results.length === 0
                         text: "Keine passenden Anwendungen"
                         color: root.theme.mutedColor
-                        font.pixelSize: 16
+                        font.family: root.theme.fontFamily; font.pixelSize: 16
                     }
                 }
 
                 Text {
-                    text: root.results.length + " Apps  ·  ↑↓ Auswählen  ·  Enter Starten  ·  Esc Schließen"
+                    width: parent.width
+                    elide: Text.ElideRight
+                    text: root.results.length + " Apps  ·  ↑↓ Auswahl  ·  ↵ Start  ·  Esc"
                     color: root.theme.mutedColor
-                    font.pixelSize: 12
+                    font.family: root.theme.fontFamily; font.pixelSize: 12
                 }
             }
         }

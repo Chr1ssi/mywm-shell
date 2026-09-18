@@ -151,20 +151,21 @@ ShellRoot {
         WlrLayershell.namespace: "mywm-wallpaper-picker"
         color: "transparent"
         Rectangle {
-            anchors.fill: parent; radius: 14
+            anchors.fill: parent; radius: 0
             color: root.theme.backgroundColor
             border.width: 2; border.color: root.theme.accentColor
             Column {
-                anchors.fill: parent; anchors.margins: 20; spacing: 12
-                Text { text: "Wallpaper · über alle Monitore"; color: root.theme.textColor; font.pixelSize: 22; font.bold: true }
+                anchors.fill: parent; anchors.margins: root.theme.panelPadding; spacing: 12
+                Text { text: "WALLPAPER / ALLE MONITORE"; color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 12; font.bold: true }
                 TextField {
                     id: search
-                    width: parent.width; height: 44
+                    width: parent.width; height: 48
+                    font.family: root.theme.fontFamily; font.pixelSize: 16
                     text: root.query; onTextChanged: root.query = text
                     placeholderText: "Nach Dateiname suchen …"
                     color: root.theme.textColor; placeholderTextColor: root.theme.mutedColor
                     selectionColor: root.theme.accentColor; selectedTextColor: root.theme.backgroundColor
-                    background: Rectangle { color: root.theme.surfaceColor; radius: 7 }
+                    background: Rectangle { color: root.theme.surfaceColor; radius: 0 }
                     Keys.onPressed: event => {
                         if (event.key === Qt.Key_Escape) root.pickerOpen = false;
                         else if (event.key === Qt.Key_Right || event.key === Qt.Key_Tab) root.move(1);
@@ -179,7 +180,7 @@ ShellRoot {
                 GridView {
                     id: grid
                     readonly property int columns: Math.max(1, Math.floor(width / 210))
-                    width: parent.width; height: Math.max(80, picker.height - 188)
+                    width: parent.width; height: Math.max(80, picker.height - 148)
                     cellWidth: width / columns; cellHeight: 155
                     clip: true
                     model: root.results
@@ -189,8 +190,8 @@ ShellRoot {
                         id: tile
                         required property var modelData
                         required property int index
-                        width: grid.cellWidth - 8; height: grid.cellHeight - 8; radius: 7
-                        color: root.theme.surfaceColor
+                        width: grid.cellWidth - 8; height: grid.cellHeight - 8; radius: 0
+                        color: index === root.selected || tileMouse.containsMouse ? root.theme.surfaceColor : "transparent"
                         border.width: index === root.selected ? 2 : 0; border.color: root.theme.accentColor
                         Image {
                             anchors { top: parent.top; left: parent.left; right: parent.right; margins: 6 }
@@ -202,21 +203,22 @@ ShellRoot {
                         Text {
                             anchors { bottom: parent.bottom; left: parent.left; right: parent.right; margins: 8 }
                             text: tile.modelData.name; elide: Text.ElideMiddle
-                            color: root.theme.textColor; font.pixelSize: 12
+                            color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 12
                         }
-                        MouseArea { anchors.fill: parent; enabled: !root.saving; onClicked: root.choose(tile.index) }
+                        MouseArea { id: tileMouse; hoverEnabled: true; anchors.fill: parent; enabled: !root.saving; onClicked: root.choose(tile.index) }
                     }
                     Text {
                         anchors.centerIn: parent
                         visible: !root.results.length
                         text: scan.running ? "Bilder werden geladen …" : "Keine passenden Bilder gefunden"
                         color: root.theme.mutedColor
+                        font.family: root.theme.fontFamily
                     }
                 }
                 Text {
                     width: parent.width; elide: Text.ElideRight
-                    text: root.errorText || (root.results.length + " Bilder · Pfeiltasten auswählen · Enter/Klick anwenden · Esc schließen")
-                    color: root.theme.mutedColor; font.pixelSize: 12
+                    text: root.errorText || (root.results.length + " Bilder · Pfeiltasten Auswahl · ↵ Anwenden · Esc")
+                    color: root.theme.mutedColor; font.family: root.theme.fontFamily; font.pixelSize: 12
                 }
             }
         }

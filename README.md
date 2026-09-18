@@ -41,3 +41,12 @@ Kanshi, Grim und für den Bar-Test PipeWire samt Kommandozeilenwerkzeugen.
 
 Das Repository wurde aus bisher unversionierten Shell-Dateien ausgegliedert;
 es gab dafür keine Git-Historie zu übertragen. Es ist noch kein Remote eingerichtet.
+
+## Gestaltung
+
+Bar, Launcher und Wallpaper-Picker orientieren sich an Omarchys flacher
+Gestaltung: JetBrainsMono Nerd Font, eckige Flächen, kompakte Abstände und
+eine 30 Pixel hohe Bar. Die Farben stammen weiterhin aus mywms zentraler
+TOML-Palette; Schrift, Bar-Höhe und Dialogabstand stehen in `quickshell/Theme.qml`.
+Die Bildvorschauen und die monitorübergreifende Wallpaper-Auswahl bleiben erhalten.
+Referenz: https://github.com/basecamp/omarchy/blob/dev/config/waybar/style.css

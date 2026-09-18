@@ -10,7 +10,7 @@ ShellRoot {
     property Theme theme: Theme {}
     property var outputs: []
     property int workspaceCount: 9
-    property string clockText: clock.date.toLocaleString(Qt.locale("de_DE"), "ddd, dd.MM.yyyy  ·  HH:mm")
+    property string clockText: clock.date.toLocaleString(Qt.locale("de_DE"), "ddd dd. MMM  HH:mm")
     SystemClock { id: clock; precision: SystemClock.Minutes }
     property var sink: Pipewire.defaultAudioSink
     property var audio: sink ? sink.audio : null
@@ -77,8 +77,8 @@ ShellRoot {
                 }
             }
             anchors { top: true; left: true; right: true }
-            implicitHeight: 36
-            exclusiveZone: 36
+            implicitHeight: root.theme.barHeight
+            exclusiveZone: root.theme.barHeight
             color: root.theme.backgroundColor
             WlrLayershell.layer: WlrLayer.Top
             WlrLayershell.namespace: "mywm-bar"
@@ -93,7 +93,7 @@ ShellRoot {
                     BarButton {
                         required property int modelData
                         theme: root.theme
-                        width: 28
+                        width: 24
                         text: String(modelData)
                         enabled: bar.output !== null
                         selected: bar.output !== null && bar.output.active === modelData
@@ -106,7 +106,7 @@ ShellRoot {
                 anchors.centerIn: parent
                 text: root.clockText
                 color: root.theme.textColor
-                font.pixelSize: 14
+                font.family: root.theme.fontFamily; font.pixelSize: 12
             }
             Row {
                 anchors.right: parent.right; anchors.rightMargin: 8
@@ -120,7 +120,7 @@ ShellRoot {
                 }
                 Slider {
                     id: volume
-                    width: 110; height: 28
+                    width: 72; height: 24
                     from: 0; to: 1
                     enabled: root.audio !== null
                     value: root.audio ? root.audio.volume : 0
@@ -134,17 +134,16 @@ ShellRoot {
                     handle: Rectangle {
                         x: volume.leftPadding + volume.visualPosition * (volume.availableWidth - width)
                         y: volume.topPadding + volume.availableHeight / 2 - height / 2
-                        width: 12; height: 12; radius: 6; color: root.theme.accentColor
+                        width: 8; height: 8; radius: 0; color: root.theme.accentColor
                     }
                 }
                 BarButton {
                     theme: root.theme
-                    text: "Power"
+                    text: "⏻"
                     selected: bar.menuOpen
                     onClicked: { bar.pending = ""; bar.errorText = ""; bar.menuOpen = !bar.menuOpen; }
                 }
             }
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: root.theme.borderColor }
 
             Process {
                 id: powerProcess
@@ -158,7 +157,7 @@ ShellRoot {
                 screen: bar.screen
                 visible: bar.menuOpen
                 anchors { top: true; right: true }
-                margins { top: 42; right: 8 }
+                margins { top: root.theme.barHeight + 8; right: 8 }
                 implicitWidth: 280; implicitHeight: 230
                 exclusionMode: ExclusionMode.Ignore
                 WlrLayershell.layer: WlrLayer.Overlay
@@ -166,7 +165,7 @@ ShellRoot {
                 WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
                 color: "transparent"
                 Rectangle {
-                    anchors.fill: parent; color: root.theme.backgroundColor; radius: 10
+                    anchors.fill: parent; color: root.theme.backgroundColor; radius: 0
                     border.color: root.theme.accentColor
                     focus: true
                     Keys.onEscapePressed: bar.menuOpen = false
@@ -174,7 +173,7 @@ ShellRoot {
                         anchors.fill: parent; anchors.margins: 14; spacing: 8
                         Text {
                             text: bar.pending ? ({logout: "Abmelden?", reboot: "Neu starten?", poweroff: "Ausschalten?"})[bar.pending] : "Sitzung und System"
-                            color: root.theme.textColor; font.pixelSize: 16
+                            color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 16
                         }
                         BarButton {
                             theme: root.theme; width: 252; text: "Sperren"
@@ -201,7 +200,7 @@ ShellRoot {
                             visible: bar.pending !== ""
                             onClicked: { bar.pending = ""; bar.errorText = ""; bar.menuOpen = false; }
                         }
-                        Text { text: bar.errorText; color: root.theme.textColor; font.pixelSize: 12 }
+                        Text { text: bar.errorText; color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 12 }
                     }
                 }
             }

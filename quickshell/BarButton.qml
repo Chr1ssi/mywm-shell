@@ -7,17 +7,17 @@ Rectangle {
     property bool selected: false
     property bool marked: false
     signal clicked()
-    implicitWidth: label.implicitWidth + 20
-    implicitHeight: 28
-    radius: 6
-    color: selected ? theme.accentColor : (mouse.containsMouse ? theme.surfaceColor : "transparent")
+    implicitWidth: label.implicitWidth + 16
+    implicitHeight: 24
+    radius: 0
+    color: selected || mouse.containsMouse ? theme.surfaceColor : "transparent"
     opacity: enabled ? 1 : 0.45
     Text {
         id: label
         anchors.centerIn: parent
         text: button.text
-        color: button.selected ? button.theme.backgroundColor : button.theme.textColor
-        font.pixelSize: 14
+        color: button.selected ? button.theme.accentColor : button.theme.textColor
+        font.family: button.theme.fontFamily; font.pixelSize: 12
         font.bold: button.marked || button.selected
     }
     Rectangle {
