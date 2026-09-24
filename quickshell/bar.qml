@@ -116,8 +116,10 @@ ShellRoot {
             readonly property var activePlayer: Mpris.players.values.find(player => player.isPlaying) || null
             property bool menuOpen: false
             property string activePanel: ""
-            onMenuOpenChanged: if (menuOpen) activePanel = ""
-            onActivePanelChanged: if (activePanel) menuOpen = false
+            property var trayMenu: null
+            property string trayMenuTitle: ""
+            onMenuOpenChanged: if (menuOpen) { activePanel = ""; trayMenu = null; }
+            onActivePanelChanged: if (activePanel) { menuOpen = false; trayMenu = null; }
             property string pending: ""
             property string errorText: ""
             function choosePower(action: string): void {
@@ -129,6 +131,13 @@ ShellRoot {
                 else if (["reboot", "poweroff"].includes(pending)) {
                     powerProcess.command = ["systemctl", pending]; powerProcess.running = true;
                 }
+            }
+            function openTrayMenu(item): void {
+                if (!item.hasMenu || !item.menu) return;
+                activePanel = "";
+                menuOpen = false;
+                trayMenuTitle = item.title || item.id || "Anwendung";
+                trayMenu = item.menu;
             }
             anchors { top: true; left: true; right: true }
             implicitHeight: root.theme.barHeight
@@ -190,8 +199,6 @@ ShellRoot {
                         border.width: modelData.status === Status.NeedsAttention ? 1 : 0
                         border.color: root.theme.accentColor
                         Image { anchors.centerIn: parent; width: 18; height: 18; source: trayIcon.modelData.icon }
-                        ToolTip.visible: trayMouse.containsMouse
-                        ToolTip.text: modelData.tooltipTitle || modelData.title || modelData.id
                         MouseArea {
                             id: trayMouse
                             anchors.fill: parent; hoverEnabled: true
@@ -199,10 +206,7 @@ ShellRoot {
                             onClicked: event => {
                                 if (event.button === Qt.MiddleButton) trayIcon.modelData.secondaryActivate();
                                 else if (event.button === Qt.RightButton || trayIcon.modelData.onlyMenu) {
-                                    if (trayIcon.modelData.hasMenu) {
-                                        const pos = trayIcon.mapToItem(bar.contentItem, 0, trayIcon.height);
-                                        trayIcon.modelData.display(bar, pos.x, pos.y);
-                                    }
+                                    bar.openTrayMenu(trayIcon.modelData);
                                 } else trayIcon.modelData.activate();
                             }
                             onWheel: event => trayIcon.modelData.scroll(event.angleDelta.y || event.angleDelta.x, event.angleDelta.y === 0)
@@ -236,6 +240,37 @@ ShellRoot {
                 onExited: (exitCode, exitStatus) => {
                     if (exitCode !== 0) bar.errorText = "Aktion fehlgeschlagen (" + exitCode + ")";
                     else bar.menuOpen = false;
+                }
+            }
+            PanelWindow {
+                visible: bar.trayMenu !== null
+                screen: bar.screen
+                anchors { top: true; right: true }
+                margins { top: root.theme.barHeight + 8; right: 8 }
+                implicitWidth: Math.min(320, bar.screen.width - 16)
+                implicitHeight: Math.min(500, trayMenuView.implicitHeight + 24)
+                color: "transparent"
+                exclusionMode: ExclusionMode.Ignore
+                WlrLayershell.layer: WlrLayer.Overlay
+                WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+                WlrLayershell.namespace: "mywm-tray-menu"
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 16
+                    color: root.theme.backgroundColor
+                    border.color: root.theme.borderColor
+                    focus: true
+                    Keys.onEscapePressed: bar.trayMenu = null
+
+                    TrayMenu {
+                        id: trayMenuView
+                        anchors { fill: parent; margins: 12 }
+                        theme: root.theme
+                        menu: bar.trayMenu
+                        title: bar.trayMenuTitle
+                        onCloseRequested: bar.trayMenu = null
+                    }
                 }
             }
             PanelWindow {
