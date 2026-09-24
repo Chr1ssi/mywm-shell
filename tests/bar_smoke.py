@@ -79,6 +79,12 @@ def main():
                 outputs = wait_for(mapped_status)
                 assert sorted(n for o in outputs for n in o["workspaces"]) == list(range(1, 10))
                 before_active = {o["id"]: o["active"] for o in outputs}
+                subprocess.run(["notify-send", "mywm Test", "Benachrichtigungen funktionieren", "--expire-time=10000"],
+                               env=env, check=True)
+                wait_for(lambda: ipc("notificationCount").stdout.strip() == "1")
+                if os.environ.get("MYWM_NOTIFICATION_SCREENSHOT"):
+                    time.sleep(0.2)
+                    subprocess.run(["grim", os.environ["MYWM_NOTIFICATION_SCREENSHOT"]], env=env, check=True)
                 subprocess.run(["pw-metadata", "-n", "default", "0", "default.audio.sink", '{"name":"test-sink"}', "Spa:String:JSON"], env=env, check=True, capture_output=True)
                 wait_for(lambda: json.loads(ipc("audioStatus").stdout))
                 assert ipc("volume", "0.37").returncode == 0
@@ -105,6 +111,15 @@ def main():
                     assert b"v1 error" in client.recv(4096)
                 if os.environ.get("MYWM_BAR_SCREENSHOT"):
                     subprocess.run(["grim", os.environ["MYWM_BAR_SCREENSHOT"]], env=env, check=True)
+                for panel in ["audio", "media", "notifications"]:
+                    assert ipc("panel", 0, panel).returncode == 0
+                    time.sleep(0.3)
+                    screenshot = os.environ.get("MYWM_" + panel.upper() + "_SCREENSHOT")
+                    if screenshot:
+                        subprocess.run(["grim", screenshot], env=env, check=True)
+                assert ipc("clearNotifications").returncode == 0
+                wait_for(lambda: ipc("notificationCount").stdout.strip() == "0")
+                assert ipc("panel", 0, "").returncode == 0
                 assert ipc("menu", 0).returncode == 0
                 time.sleep(0.2)
                 if os.environ.get("MYWM_POWER_SCREENSHOT"):

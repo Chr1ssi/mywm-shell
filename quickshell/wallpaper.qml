@@ -35,12 +35,12 @@ ShellRoot {
         query = "";
         selected = Math.max(0, results.findIndex(e => e.url === displayedWallpaper));
         pickerOpen = true;
-        Qt.callLater(() => { search.forceActiveFocus(); grid.positionViewAtIndex(selected, GridView.Contain); });
+        Qt.callLater(() => search.forceActiveFocus());
     }
     function move(delta: int): void {
         if (!results.length) return;
         selected = Math.max(0, Math.min(results.length - 1, selected + delta));
-        grid.positionViewAtIndex(selected, GridView.Contain);
+
     }
     function choose(index: int): void {
         if (saving || !stateReady || index < 0 || index >= results.length) return;
@@ -143,83 +143,99 @@ ShellRoot {
         id: picker
         visible: root.pickerOpen
         screen: root.pickerScreen
-        implicitWidth: Math.min(960, (screen ? screen.width : 992) - 32)
-        implicitHeight: Math.min(700, (screen ? screen.height : 732) - 64)
+        anchors { top: true; bottom: true; left: true; right: true }
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
         WlrLayershell.namespace: "mywm-wallpaper-picker"
-        color: "transparent"
-        Rectangle {
-            anchors.fill: parent; radius: 0
-            color: root.theme.backgroundColor
-            border.width: 2; border.color: root.theme.accentColor
-            Column {
-                anchors.fill: parent; anchors.margins: root.theme.panelPadding; spacing: 12
-                Text { text: "WALLPAPER / ALLE MONITORE"; color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 12; font.bold: true }
-                TextField {
-                    id: search
-                    width: parent.width; height: 48
-                    font.family: root.theme.fontFamily; font.pixelSize: 16
-                    text: root.query; onTextChanged: root.query = text
-                    placeholderText: "Nach Dateiname suchen …"
-                    color: root.theme.textColor; placeholderTextColor: root.theme.mutedColor
-                    selectionColor: root.theme.accentColor; selectedTextColor: root.theme.backgroundColor
-                    background: Rectangle { color: root.theme.surfaceColor; radius: 0 }
-                    Keys.onPressed: event => {
-                        if (event.key === Qt.Key_Escape) root.pickerOpen = false;
-                        else if (event.key === Qt.Key_Right || event.key === Qt.Key_Tab) root.move(1);
-                        else if (event.key === Qt.Key_Left || event.key === Qt.Key_Backtab) root.move(-1);
-                        else if (event.key === Qt.Key_Down) root.move(grid.columns);
-                        else if (event.key === Qt.Key_Up) root.move(-grid.columns);
-                        else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) root.choose(root.selected);
-                        else return;
-                        event.accepted = true;
-                    }
-                }
-                GridView {
-                    id: grid
-                    readonly property int columns: Math.max(1, Math.floor(width / 210))
-                    width: parent.width; height: Math.max(80, picker.height - 148)
-                    cellWidth: width / columns; cellHeight: 155
-                    clip: true
+        color: "#b3000000"
+        MouseArea { anchors.fill: parent; onClicked: root.pickerOpen = false }
+        Column {
+            anchors.centerIn: parent
+            width: parent.width - 48
+            spacing: 22
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "WALLPAPER"
+                color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 14; font.bold: true
+            }
+            Item {
+                id: carousel
+                width: parent.width
+                height: Math.min(475, picker.height * 0.58)
+                readonly property real expandedWidth: Math.min(768, width * 0.64)
+                readonly property real step: Math.min(78, width * 0.07)
+                clip: true
+                Repeater {
                     model: root.results
-                    currentIndex: root.selected
-                    ScrollBar.vertical: ScrollBar {}
-                    delegate: Rectangle {
+                    Item {
                         id: tile
                         required property var modelData
                         required property int index
-                        width: grid.cellWidth - 8; height: grid.cellHeight - 8; radius: 0
-                        color: index === root.selected || tileMouse.containsMouse ? root.theme.surfaceColor : "transparent"
-                        border.width: index === root.selected ? 2 : 0; border.color: root.theme.accentColor
-                        Image {
-                            anchors { top: parent.top; left: parent.left; right: parent.right; margins: 6 }
-                            height: 110
-                            source: tile.modelData.url
-                            sourceSize.width: 240; sourceSize.height: 160
-                            fillMode: Image.PreserveAspectCrop; asynchronous: true
+                        readonly property int distance: index - root.selected
+                        readonly property bool selected: distance === 0
+                        visible: Math.abs(distance) <= 6
+                        z: selected ? 10 : 6 - Math.abs(distance)
+                        x: (carousel.width - carousel.expandedWidth) / 2 + (distance < 0 ? distance * carousel.step : distance > 0 ? carousel.expandedWidth + (distance - 1) * carousel.step : 0)
+                        y: selected ? 0 : 20
+                        width: selected ? carousel.expandedWidth : carousel.step + 24
+                        height: carousel.height - (selected ? 0 : 40)
+                        transform: Matrix4x4 { matrix: Qt.matrix4x4(1, -0.06, 0, 14, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1) }
+                        Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                        Behavior on width { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                        Rectangle {
+                            anchors.fill: parent; color: root.theme.surfaceColor
+                            clip: true
+                            Image {
+                                anchors.fill: parent; anchors.margins: tile.selected ? 3 : 1
+                                source: tile.visible ? tile.modelData.url : ""
+                                sourceSize.width: 1000; sourceSize.height: 600
+                                fillMode: Image.PreserveAspectCrop; asynchronous: true
+                            }
+                            Rectangle { anchors.fill: parent; color: "#66000000"; visible: !tile.selected }
+                            Rectangle { anchors.fill: parent; color: "transparent"; border.width: tile.selected ? 3 : 1; border.color: tile.selected ? root.theme.accentColor : root.theme.borderColor }
                         }
-                        Text {
-                            anchors { bottom: parent.bottom; left: parent.left; right: parent.right; margins: 8 }
-                            text: tile.modelData.name; elide: Text.ElideMiddle
-                            color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 12
+                        MouseArea {
+                            anchors.fill: parent; enabled: !root.saving; cursorShape: Qt.PointingHandCursor
+                            onClicked: { if (tile.selected) root.choose(tile.index); else root.selected = tile.index; }
+                            onWheel: event => root.move(event.angleDelta.y < 0 ? 1 : -1)
                         }
-                        MouseArea { id: tileMouse; hoverEnabled: true; anchors.fill: parent; enabled: !root.saving; onClicked: root.choose(tile.index) }
-                    }
-                    Text {
-                        anchors.centerIn: parent
-                        visible: !root.results.length
-                        text: scan.running ? "Bilder werden geladen …" : "Keine passenden Bilder gefunden"
-                        color: root.theme.mutedColor
-                        font.family: root.theme.fontFamily
                     }
                 }
                 Text {
-                    width: parent.width; elide: Text.ElideRight
-                    text: root.errorText || (root.results.length + " Bilder · Pfeiltasten Auswahl · ↵ Anwenden · Esc")
-                    color: root.theme.mutedColor; font.family: root.theme.fontFamily; font.pixelSize: 12
+                    anchors.centerIn: parent; visible: !root.results.length
+                    text: scan.running ? "Bilder werden geladen …" : "Keine passenden Bilder gefunden"
+                    color: root.theme.textColor; font.family: root.theme.fontFamily
                 }
+            }
+            Text {
+                width: parent.width; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideMiddle
+                text: root.results.length ? root.results[root.selected].name : ""
+                color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 20
+            }
+            TextField {
+                id: search
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: Math.min(420, parent.width); height: 40
+                font.family: root.theme.fontFamily; font.pixelSize: 13
+                text: root.query; onTextChanged: root.query = text
+                placeholderText: "Bilder filtern …"
+                color: root.theme.textColor; placeholderTextColor: root.theme.mutedColor
+                selectionColor: root.theme.accentColor; selectedTextColor: root.theme.backgroundColor
+                background: Rectangle { color: root.theme.backgroundColor; border.color: root.theme.borderColor }
+                Keys.onPressed: event => {
+                    if (event.key === Qt.Key_Escape) root.pickerOpen = false;
+                    else if (event.key === Qt.Key_Right || event.key === Qt.Key_Down || event.key === Qt.Key_Tab) root.move(1);
+                    else if (event.key === Qt.Key_Left || event.key === Qt.Key_Up || event.key === Qt.Key_Backtab) root.move(-1);
+                    else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) root.choose(root.selected);
+                    else return;
+                    event.accepted = true;
+                }
+            }
+            Text {
+                width: parent.width; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
+                text: root.errorText || (root.saving ? "Wird gespeichert …" : (root.results.length ? root.selected + 1 : 0) + " / " + root.results.length + "  ·  ← → Auswahl  ·  ↵ Anwenden  ·  Esc")
+                color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 12
             }
         }
     }

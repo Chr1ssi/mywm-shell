@@ -4,12 +4,18 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Services.Pipewire
+import Quickshell.Services.Mpris
+import Quickshell.Services.Notifications
+import Quickshell.Services.SystemTray
 
 ShellRoot {
     id: root
     property Theme theme: Theme {}
     property var outputs: []
     property int workspaceCount: 9
+    property var notifications: []
+    property var toastNotifications: []
+    property var closedNotificationIds: []
     property string clockText: clock.date.toLocaleString(Qt.locale("de_DE"), "ddd dd. MMM  HH:mm")
     SystemClock { id: clock; precision: SystemClock.Minutes }
     property var sink: Pipewire.defaultAudioSink
@@ -24,6 +30,45 @@ ShellRoot {
     }
     function outputFor(screen): var {
         return outputs.find(o => o.x === screen.x && o.y === screen.y) || null;
+    }
+    function removeNotification(notification): void {
+        toastNotifications = toastNotifications.filter(item => item !== notification);
+        notifications = notifications.filter(item => item !== notification);
+    }
+    function markNotificationClosed(notification): void {
+        if (!closedNotificationIds.includes(notification.id))
+            closedNotificationIds = closedNotificationIds.concat([notification.id]);
+    }
+    function dismissNotification(notification): void {
+        const alreadyClosed = closedNotificationIds.includes(notification.id);
+        removeNotification(notification);
+        if (!alreadyClosed) notification.dismiss();
+    }
+    function clearNotifications(): void {
+        const current = notifications.slice();
+        notifications = [];
+        toastNotifications = [];
+        for (const notification of current) {
+            if (!closedNotificationIds.includes(notification.id)) notification.dismiss();
+        }
+        closedNotificationIds = [];
+    }
+
+    NotificationServer {
+        id: notificationServer
+        keepOnReload: true
+        persistenceSupported: true
+        bodySupported: true
+        bodyMarkupSupported: true
+        actionsSupported: true
+        imageSupported: true
+        onNotification: notification => {
+            notification.tracked = true;
+            root.closedNotificationIds = root.closedNotificationIds.filter(id => id !== notification.id);
+            notification.closed.connect(() => root.markNotificationClosed(notification));
+            root.notifications = [notification].concat(root.notifications.filter(item => item.id !== notification.id));
+            root.toastNotifications = [notification].concat(root.toastNotifications.filter(item => item.id !== notification.id)).slice(0, 4);
+        }
     }
     Socket {
         id: socket
@@ -48,9 +93,14 @@ ShellRoot {
         target: "bar"
         function status(): string { return JSON.stringify(root.outputs); }
         function audioStatus(): string { return JSON.stringify(root.audio ? {volume: root.audio.volume, muted: root.audio.muted} : null); }
+        function notificationCount(): int { return root.notifications.length; }
+        function clearNotifications(): void { root.clearNotifications(); }
         function volume(value: real): void { root.setVolume(value); }
         function mute(): void { root.toggleMute(); }
         function workspace(output: string, number: int): void { root.send("workspace " + output + " " + number); }
+        function panel(index: int, name: string): void {
+            if (index >= 0 && index < bars.instances.length && ["", "audio", "media", "notifications"].includes(name)) bars.instances[index].activePanel = name;
+        }
         function menu(index: int): void { bars.instances[index].menuOpen = true; }
         function choosePower(index: int, action: string): void { bars.instances[index].choosePower(action); }
         function confirmPower(index: int): void { bars.instances[index].confirmPower(); }
@@ -63,7 +113,11 @@ ShellRoot {
             required property var modelData
             screen: modelData
             property var output: root.outputFor(modelData)
+            readonly property var activePlayer: Mpris.players.values.find(player => player.isPlaying) || null
             property bool menuOpen: false
+            property string activePanel: ""
+            onMenuOpenChanged: if (menuOpen) activePanel = ""
+            onActivePanelChanged: if (activePanel) menuOpen = false
             property string pending: ""
             property string errorText: ""
             function choosePower(action: string): void {
@@ -102,40 +156,72 @@ ShellRoot {
                     }
                 }
             }
-            Text {
+            Row {
                 anchors.centerIn: parent
-                text: root.clockText
-                color: root.theme.textColor
-                font.family: root.theme.fontFamily; font.pixelSize: 12
+                spacing: 8
+
+                BarButton {
+                    visible: bar.activePlayer !== null
+                    width: visible ? Math.min(260, bar.width * 0.24) : 0
+                    theme: root.theme
+                    text: bar.activePlayer ? "󰎆 " + (bar.activePlayer.trackTitle || bar.activePlayer.identity) : ""
+                    selected: bar.activePanel === "media"
+                    onClicked: bar.activePanel = selected ? "" : "media"
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: root.clockText
+                    color: root.theme.textColor
+                    font.family: root.theme.fontFamily; font.pixelSize: 12
+                }
             }
             Row {
                 anchors.right: parent.right; anchors.rightMargin: 8
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 8
+                Repeater {
+                    model: SystemTray.items
+                    Rectangle {
+                        id: trayIcon
+                        required property var modelData
+                        width: visible ? 24 : 0; height: 24; radius: 6
+                        visible: modelData.status !== Status.Passive
+                        color: trayMouse.containsMouse ? root.theme.surfaceColor : "transparent"
+                        border.width: modelData.status === Status.NeedsAttention ? 1 : 0
+                        border.color: root.theme.accentColor
+                        Image { anchors.centerIn: parent; width: 18; height: 18; source: trayIcon.modelData.icon }
+                        ToolTip.visible: trayMouse.containsMouse
+                        ToolTip.text: modelData.tooltipTitle || modelData.title || modelData.id
+                        MouseArea {
+                            id: trayMouse
+                            anchors.fill: parent; hoverEnabled: true
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+                            onClicked: event => {
+                                if (event.button === Qt.MiddleButton) trayIcon.modelData.secondaryActivate();
+                                else if (event.button === Qt.RightButton || trayIcon.modelData.onlyMenu) {
+                                    if (trayIcon.modelData.hasMenu) {
+                                        const pos = trayIcon.mapToItem(bar.contentItem, 0, trayIcon.height);
+                                        trayIcon.modelData.display(bar, pos.x, pos.y);
+                                    }
+                                } else trayIcon.modelData.activate();
+                            }
+                            onWheel: event => trayIcon.modelData.scroll(event.angleDelta.y || event.angleDelta.x, event.angleDelta.y === 0)
+                        }
+                    }
+                }
                 BarButton {
                     theme: root.theme
-                    text: !root.audio ? "Audio —" : root.audio.muted ? "Stumm" : Math.round(root.audio.volume * 100) + " %"
-                    enabled: root.audio !== null
-                    onClicked: root.toggleMute()
+                    text: root.notifications.length ? "󰂚 " + root.notifications.length : "󰂜"
+                    selected: bar.activePanel === "notifications"
+                    onClicked: bar.activePanel = selected ? "" : "notifications"
                 }
-                Slider {
-                    id: volume
-                    width: 72; height: 24
-                    from: 0; to: 1
-                    enabled: root.audio !== null
-                    value: root.audio ? root.audio.volume : 0
-                    onMoved: root.setVolume(value)
-                    background: Rectangle {
-                        x: volume.leftPadding; y: volume.topPadding + volume.availableHeight / 2 - height / 2
-                        width: volume.availableWidth; height: 4; radius: 2
-                        color: root.theme.surfaceColor
-                        Rectangle { width: volume.visualPosition * parent.width; height: parent.height; radius: 2; color: root.theme.accentColor }
-                    }
-                    handle: Rectangle {
-                        x: volume.leftPadding + volume.visualPosition * (volume.availableWidth - width)
-                        y: volume.topPadding + volume.availableHeight / 2 - height / 2
-                        width: 8; height: 8; radius: 0; color: root.theme.accentColor
-                    }
+                BarButton {
+                    theme: root.theme
+                    text: !root.audio ? "󰕾 —" : root.audio.muted ? "󰖁 Stumm" : "󰕾 " + Math.round(root.audio.volume * 100) + " %"
+                    selected: bar.activePanel === "audio"
+                    onClicked: bar.activePanel = selected ? "" : "audio"
+                    onSecondaryClicked: root.toggleMute()
+                    onScrolled: delta => { if (root.audio) root.setVolume(root.audio.volume + delta * 0.05); }
                 }
                 BarButton {
                     theme: root.theme
@@ -153,54 +239,167 @@ ShellRoot {
                 }
             }
             PanelWindow {
+                visible: bar.activePanel !== ""
+                screen: bar.screen
+                anchors {
+                    top: true
+                    right: bar.activePanel === "audio" || bar.activePanel === "notifications"
+                }
+                margins { top: root.theme.barHeight + 12; right: bar.activePanel === "audio" || bar.activePanel === "notifications" ? 12 : 0 }
+                implicitWidth: Math.min(400, bar.screen.width - 24)
+                implicitHeight: Math.min(Math.max(150, panelLoader.implicitHeight + 82), bar.screen.height - root.theme.barHeight - 24)
+                color: "transparent"
+                exclusionMode: ExclusionMode.Ignore
+                WlrLayershell.layer: WlrLayer.Overlay
+                WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+                Rectangle {
+                    anchors.fill: parent; radius: 18; color: root.theme.backgroundColor; border.color: root.theme.borderColor
+                    focus: true
+                    Keys.onEscapePressed: bar.activePanel = ""
+                    Column {
+                        anchors.fill: parent; anchors.margins: 20; spacing: 14
+                        Row {
+                            width: parent.width
+                            Text {
+                                width: parent.width - 40
+                                text: bar.activePanel === "audio" ? "Audio" : bar.activePanel === "media" ? "Medien" : "Benachrichtigungen"
+                                color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 18
+                            }
+                            BarButton { theme: root.theme; text: "×"; onClicked: bar.activePanel = "" }
+                        }
+                        Flickable {
+                            width: parent.width; height: parent.height - 42
+                            contentHeight: panelLoader.height; clip: true
+                            ScrollBar.vertical: ScrollBar {}
+                            Loader {
+                                id: panelLoader
+                                width: parent.width
+                                sourceComponent: bar.activePanel === "audio" ? audioPanel : bar.activePanel === "media" ? mediaPanel : notificationPanel
+                            }
+                        }
+                    }
+                }
+                Component { id: audioPanel; AudioPanel { theme: root.theme } }
+                Component { id: mediaPanel; MediaPanel { theme: root.theme } }
+                Component {
+                    id: notificationPanel
+                    NotificationCenter {
+                        theme: root.theme
+                        notifications: root.notifications
+                        onDismiss: notification => root.dismissNotification(notification)
+                        onClearAll: root.clearNotifications()
+                    }
+                }
+            }
+            PanelWindow {
                 id: menu
                 screen: bar.screen
                 visible: bar.menuOpen
-                anchors { top: true; right: true }
-                margins { top: root.theme.barHeight + 8; right: 8 }
-                implicitWidth: 280; implicitHeight: 230
+                implicitWidth: Math.min(620, bar.screen.width - 32)
+                implicitHeight: 260
                 exclusionMode: ExclusionMode.Ignore
                 WlrLayershell.layer: WlrLayer.Overlay
                 WlrLayershell.namespace: "mywm-power"
                 WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
                 color: "transparent"
                 Rectangle {
-                    anchors.fill: parent; color: root.theme.backgroundColor; radius: 0
-                    border.color: root.theme.accentColor
+                    anchors.fill: parent; color: root.theme.backgroundColor; radius: 24
+                    border.color: root.theme.borderColor
                     focus: true
-                    Keys.onEscapePressed: bar.menuOpen = false
+                    Keys.onEscapePressed: { bar.menuOpen = false; bar.pending = ""; }
                     Column {
-                        anchors.fill: parent; anchors.margins: 14; spacing: 8
+                        anchors.fill: parent; anchors.margins: 24; spacing: 22
                         Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
                             text: bar.pending ? ({logout: "Abmelden?", reboot: "Neu starten?", poweroff: "Ausschalten?"})[bar.pending] : "Sitzung und System"
-                            color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 16
+                            color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 20
                         }
-                        BarButton {
-                            theme: root.theme; width: 252; text: "Sperren"
+                        Row {
                             visible: bar.pending === ""
-                            enabled: socket.connected
-                            onClicked: { root.send("lock"); bar.menuOpen = false; }
-                        }
-                        Repeater {
-                            model: bar.pending ? [] : [{label: "Logout", action: "logout"}, {label: "Reboot", action: "reboot"}, {label: "Shutdown", action: "poweroff"}]
-                            BarButton {
-                                required property var modelData
-                                theme: root.theme; width: 252; text: modelData.label
-                                onClicked: bar.choosePower(modelData.action)
+                            width: parent.width; spacing: 12
+                            Repeater {
+                                model: [{label: "Sperren", icon: "󰌾", action: "lock"}, {label: "Abmelden", icon: "󰍃", action: "logout"}, {label: "Neustart", icon: "󰜉", action: "reboot"}, {label: "Ausschalten", icon: "⏻", action: "poweroff"}]
+                                Rectangle {
+                                    id: powerTile
+                                    required property var modelData
+                                    width: (parent.width - 36) / 4; height: 112; radius: 18
+                                    color: powerMouse.containsMouse || activeFocus ? root.theme.accentColor : root.theme.surfaceColor
+                                    activeFocusOnTab: true
+                                    enabled: !["lock", "logout"].includes(modelData.action) || socket.connected
+                                    opacity: enabled ? 1 : 0.4
+                                    function activate(): void {
+                                        if (modelData.action === "lock") { root.send("lock"); bar.menuOpen = false; }
+                                        else bar.choosePower(modelData.action);
+                                    }
+                                    Keys.onReturnPressed: activate()
+                                    Keys.onSpacePressed: activate()
+                                    Column {
+                                        anchors.centerIn: parent; spacing: 10
+                                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: powerTile.modelData.icon; font.family: root.theme.fontFamily; font.pixelSize: 34; color: powerMouse.containsMouse || powerTile.activeFocus ? root.theme.backgroundColor : root.theme.accentColor }
+                                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: powerTile.modelData.label; font.family: root.theme.fontFamily; font.pixelSize: 11; color: powerMouse.containsMouse || powerTile.activeFocus ? root.theme.backgroundColor : root.theme.textColor }
+                                    }
+                                    MouseArea { id: powerMouse; anchors.fill: parent; hoverEnabled: true; onClicked: powerTile.activate() }
+                                }
                             }
                         }
-                        BarButton {
-                            visible: bar.pending !== ""
-                            theme: root.theme; text: "Bestätigen"; width: 252
-                            enabled: !powerProcess.running && (bar.pending !== "logout" || socket.connected)
-                            onClicked: bar.confirmPower()
+                        Row {
+                            visible: bar.pending !== ""; anchors.horizontalCenter: parent.horizontalCenter; spacing: 20
+                            BarButton { theme: root.theme; text: "Abbrechen"; height: 44; onClicked: { bar.pending = ""; bar.errorText = ""; } }
+                            BarButton { theme: root.theme; text: "Bestätigen"; height: 44; selected: true; enabled: !powerProcess.running && (bar.pending !== "logout" || socket.connected); onClicked: bar.confirmPower() }
                         }
-                        BarButton {
-                            theme: root.theme; text: "Abbrechen"; width: 252
-                            visible: bar.pending !== ""
-                            onClicked: { bar.pending = ""; bar.errorText = ""; bar.menuOpen = false; }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: bar.errorText || "Esc zum Schließen"; color: root.theme.mutedColor; font.family: root.theme.fontFamily; font.pixelSize: 12 }
+                    }
+                }
+            }
+        }
+    }
+
+    Variants {
+        model: Quickshell.screens.length ? [Quickshell.screens[0]] : []
+        PanelWindow {
+            id: toastWindow
+            required property var modelData
+            screen: modelData
+            visible: root.toastNotifications.length > 0
+            anchors { top: true; right: true }
+            margins { top: root.theme.barHeight + 12; right: 12 }
+            implicitWidth: Math.min(390, screen.width - 24)
+            implicitHeight: toastColumn.implicitHeight
+            color: "transparent"
+            exclusionMode: ExclusionMode.Ignore
+            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+            WlrLayershell.namespace: "mywm-notifications"
+
+            Column {
+                id: toastColumn
+                width: parent.width
+                spacing: 8
+                Repeater {
+                    model: root.toastNotifications
+                    NotificationCard {
+                        id: toast
+                        required property var modelData
+                        width: toastColumn.width
+                        notification: modelData
+                        theme: root.theme
+                        compact: true
+                        onCloseRequested: root.dismissNotification(modelData)
+                        Timer {
+                            readonly property int requested: toast.modelData.expireTimeout
+                            interval: requested > 0 ? requested : toast.modelData.urgency === NotificationUrgency.Low ? 4000 : 7000
+                            running: requested !== 0 && !toastMouse.containsMouse
+                            onTriggered: {
+                                toast.modelData.expire();
+                                root.toastNotifications = root.toastNotifications.filter(item => item !== toast.modelData);
+                            }
                         }
-                        Text { text: bar.errorText; color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 12 }
+                        MouseArea {
+                            id: toastMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            acceptedButtons: Qt.NoButton
+                        }
                     }
                 }
             }
