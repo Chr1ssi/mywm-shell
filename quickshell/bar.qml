@@ -82,7 +82,7 @@ ShellRoot {
                 root.workspaceCount = Number(parts[2]);
                 root.outputs = (parts[3] || "").split(";").filter(s => s.length).map(s => {
                     const v = s.split(",").map(Number);
-                    return { id: v[0], x: v[1], y: v[2], width: v[3], height: v[4], active: v[5], occupied: v[6], workspaces: Array.from({length: root.workspaceCount}, (_, i) => i + 1).filter(n => (v.length < 8 || (v[7] & (1 << (n - 1))) !== 0)) };
+                    return { id: v[0], x: v[1], y: v[2], width: v[3], height: v[4], active: v[5], occupied: v[6], canScrollLeft: v[8] === 1, canScrollRight: v[9] === 1, workspaces: Array.from({length: root.workspaceCount}, (_, i) => i + 1).filter(n => (v.length < 8 || (v[7] & (1 << (n - 1))) !== 0)) };
                 });
             }
         }
@@ -146,6 +146,27 @@ ShellRoot {
             WlrLayershell.layer: WlrLayer.Top
             WlrLayershell.namespace: "mywm-bar"
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+
+            Text {
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.leftMargin: 2
+                visible: bar.output !== null && bar.output.canScrollLeft
+                text: "‹"
+                color: root.theme.accentColor
+                font.pixelSize: 24
+                font.bold: true
+            }
+            Text {
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.rightMargin: 2
+                visible: bar.output !== null && bar.output.canScrollRight
+                text: "›"
+                color: root.theme.accentColor
+                font.pixelSize: 24
+                font.bold: true
+            }
 
             Row {
                 anchors.left: parent.left; anchors.leftMargin: 8
