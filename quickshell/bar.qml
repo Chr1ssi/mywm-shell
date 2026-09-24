@@ -147,25 +147,27 @@ ShellRoot {
             WlrLayershell.namespace: "mywm-bar"
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
-            Text {
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.leftMargin: 2
+            PanelWindow {
                 visible: bar.output !== null && bar.output.canScrollLeft
-                text: "‹"
+                screen: bar.screen
+                anchors { top: true; bottom: true; left: true }
+                implicitWidth: 5
+                exclusiveZone: 5
                 color: root.theme.accentColor
-                font.pixelSize: 24
-                font.bold: true
+                WlrLayershell.layer: WlrLayer.Top
+                WlrLayershell.namespace: "mywm-window-marker-left"
+                WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
             }
-            Text {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.rightMargin: 2
+            PanelWindow {
                 visible: bar.output !== null && bar.output.canScrollRight
-                text: "›"
+                screen: bar.screen
+                anchors { top: true; bottom: true; right: true }
+                implicitWidth: 5
+                exclusiveZone: 5
                 color: root.theme.accentColor
-                font.pixelSize: 24
-                font.bold: true
+                WlrLayershell.layer: WlrLayer.Top
+                WlrLayershell.namespace: "mywm-window-marker-right"
+                WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
             }
 
             Row {
