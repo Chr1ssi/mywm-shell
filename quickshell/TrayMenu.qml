@@ -60,17 +60,12 @@ Column {
             }
         }
         Text {
-            width: parent.width - closeButton.width - (menuView.menuStack.length > 0 ? 38 : 0)
+            width: parent.width - (menuView.menuStack.length > 0 ? 38 : 0)
             anchors.verticalCenter: parent.verticalCenter
             text: menuView.title
             color: menuView.theme.textColor
             font.family: menuView.theme.fontFamily; font.pixelSize: 13; font.bold: true
             elide: Text.ElideRight
-        }
-        BarButton {
-            id: closeButton
-            theme: menuView.theme; text: "×"; width: 24
-            onClicked: menuView.closeRequested()
         }
     }
 

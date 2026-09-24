@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Window
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -266,6 +267,7 @@ ShellRoot {
                 }
             }
             PanelWindow {
+                id: trayMenuWindow
                 visible: bar.trayMenu !== null
                 screen: bar.screen
                 anchors { top: true; right: true }
@@ -275,15 +277,23 @@ ShellRoot {
                 color: "transparent"
                 exclusionMode: ExclusionMode.Ignore
                 WlrLayershell.layer: WlrLayer.Overlay
-                WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+                WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
                 WlrLayershell.namespace: "mywm-tray-menu"
+                property bool gainedFocus: false
+                onVisibleChanged: if (!visible) gainedFocus = false
 
                 Rectangle {
+                    id: trayMenuRoot
                     anchors.fill: parent
                     radius: 16
                     color: root.theme.backgroundColor
                     border.color: root.theme.borderColor
                     focus: true
+                    property bool windowActive: Window.active
+                    onWindowActiveChanged: {
+                        if (windowActive) trayMenuWindow.gainedFocus = true;
+                        else if (trayMenuWindow.visible && trayMenuWindow.gainedFocus) bar.trayMenu = null;
+                    }
                     Keys.onEscapePressed: bar.trayMenu = null
 
                     TrayMenu {
@@ -297,6 +307,7 @@ ShellRoot {
                 }
             }
             PanelWindow {
+                id: detailsPanel
                 visible: bar.activePanel !== ""
                 screen: bar.screen
                 anchors {
@@ -309,21 +320,28 @@ ShellRoot {
                 color: "transparent"
                 exclusionMode: ExclusionMode.Ignore
                 WlrLayershell.layer: WlrLayer.Overlay
-                WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+                WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+                property bool gainedFocus: false
+                onVisibleChanged: if (!visible) gainedFocus = false
                 Rectangle {
+                    id: detailsPanelRoot
                     anchors.fill: parent; radius: 18; color: root.theme.backgroundColor; border.color: root.theme.borderColor
                     focus: true
+                    property bool windowActive: Window.active
+                    onWindowActiveChanged: {
+                        if (windowActive) detailsPanel.gainedFocus = true;
+                        else if (detailsPanel.visible && detailsPanel.gainedFocus) bar.activePanel = "";
+                    }
                     Keys.onEscapePressed: bar.activePanel = ""
                     Column {
                         anchors.fill: parent; anchors.margins: 20; spacing: 14
                         Row {
                             width: parent.width
                             Text {
-                                width: parent.width - 40
+                                width: parent.width
                                 text: bar.activePanel === "audio" ? "Audio" : bar.activePanel === "media" ? "Medien" : "Benachrichtigungen"
                                 color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 18
                             }
-                            BarButton { theme: root.theme; text: "×"; onClicked: bar.activePanel = "" }
                         }
                         Flickable {
                             width: parent.width; height: parent.height - 42
@@ -358,12 +376,23 @@ ShellRoot {
                 exclusionMode: ExclusionMode.Ignore
                 WlrLayershell.layer: WlrLayer.Overlay
                 WlrLayershell.namespace: "mywm-power"
-                WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+                WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
                 color: "transparent"
+                property bool gainedFocus: false
+                onVisibleChanged: if (!visible) gainedFocus = false
                 Rectangle {
+                    id: menuRoot
                     anchors.fill: parent; color: root.theme.backgroundColor; radius: 24
                     border.color: root.theme.borderColor
                     focus: true
+                    property bool windowActive: Window.active
+                    onWindowActiveChanged: {
+                        if (windowActive) menu.gainedFocus = true;
+                        else if (menu.visible && menu.gainedFocus) {
+                            bar.menuOpen = false;
+                            bar.pending = "";
+                        }
+                    }
                     Keys.onEscapePressed: { bar.menuOpen = false; bar.pending = ""; }
                     Column {
                         anchors.fill: parent; anchors.margins: 24; spacing: 22
