@@ -15,15 +15,24 @@ Projects/
     └── tests/
 ```
 
-Benötigt werden Quickshell (getestet mit 0.3.1) und das gebaute mywm. Als Compositor werden River mit mywm sowie Niri unterstützt.
+Der Flake stellt ein eigenständiges `mywm-shell`-Paket bereit. Als Compositor werden River mit mywm sowie Niri unterstützt; Niri benötigt das mywm-Paket nicht.
 Der Sitzungsstart in mywm verwaltet Bar und Wallpaper. `mywm --bar` und
 `mywm --wallpaper` übergeben Theme und Hilfsprogramme; Super+Space öffnet den Launcher.
 `MYWM_SHELL_DIR` kann auf einen anderen absoluten QML-Ordner zeigen.
 
 Die gemeinsame Palette bleibt in mywms TOML unter `[appearance]`.
-IPC, Umgebungsvariablen und Hilfsbefehle sind im
-[Integrationsvertrag](../mywm/docs/quickshell.md) beschrieben.
-Die Shell verwendet mywm compositorunabhängig für Theme, Launcher, Wallpaper, Idle-Verhalten und Sitzungssperre. Die Bar erkennt `MYWM_SOCKET` oder `NIRI_SOCKET` automatisch; unter Niri liest sie den JSON-Eventstream und steuert benannte Workspaces über `niri msg`.
+Das eigenständige `mywm-shell`-Programm startet Bar, Launcher, Wallpaper, Picker, Idle-Verhalten und Sitzungssperre. Die Bar erkennt `MYWM_SOCKET` oder `NIRI_SOCKET` automatisch; unter Niri liest sie den JSON-Eventstream und steuert benannte Workspaces über `niri msg`.
+
+## Eigenständiges Paket
+
+```sh
+nix run . -- bar
+nix run . -- launcher
+nix run . -- wallpaper
+nix run . -- lock
+```
+
+Wallpaper-Verzeichnis, Farben, Terminal und Idle-Zeiten lassen sich über die in `scripts/mywm-shell` dokumentierten `MYWM_SHELL_*`- beziehungsweise Laufzeitvariablen konfigurieren.
 
 ## Tests
 
@@ -39,8 +48,6 @@ Die Tests verwenden isolierte Headless-River-Sitzungen. Benötigt werden außerd
 Kanshi, Grim und für den Bar-Test PipeWire samt Kommandozeilenwerkzeugen.
 `MYWM_SOURCE_DIR` erlaubt einen anderen Pfad zum mywm-Repository.
 
-Das Repository wurde aus bisher unversionierten Shell-Dateien ausgegliedert;
-es gab dafür keine Git-Historie zu übertragen. Es ist noch kein Remote eingerichtet.
 
 ## Gestaltung und Bedienung
 

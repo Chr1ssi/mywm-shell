@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+: "${MYWM_SHELL_DIR:?MYWM_SHELL_DIR must point at the QML directory}"
+
+export MYWM_COLOR_BACKGROUND="${MYWM_SHELL_COLOR_BACKGROUND:-#1e1e2e}"
+export MYWM_COLOR_SURFACE="${MYWM_SHELL_COLOR_SURFACE:-#313244}"
+export MYWM_COLOR_TEXT="${MYWM_SHELL_COLOR_TEXT:-#cdd6f4}"
+export MYWM_COLOR_MUTED="${MYWM_SHELL_COLOR_MUTED:-#a6adc8}"
+export MYWM_COLOR_ACCENT="${MYWM_SHELL_COLOR_ACCENT:-#89b4fa}"
+export MYWM_COLOR_BORDER="${MYWM_SHELL_COLOR_BORDER:-#45475a}"
+export MYWM_WALLPAPER_DIRECTORY="${MYWM_WALLPAPER_DIRECTORY:-${XDG_PICTURES_DIR:-$HOME/Pictures}/Wallpapers}"
+state_home="${XDG_STATE_HOME:-$HOME/.local/state}"
+export MYWM_WALLPAPER_STATE="${MYWM_WALLPAPER_STATE:-$state_home/mywm-shell/wallpaper.json}"
+
+urlencode_path() {
+  local input=$1 output=file:// char hex i
+  LC_ALL=C
+  for ((i = 0; i < ${#input}; i++)); do
+    char=${input:i:1}
+    case "$char" in
+      [a-zA-Z0-9/~_.-]) output+=$char ;;
+      *) printf -v hex "%%%02X" "'$char"; output+=$hex ;;
+    esac
+  done
+  printf "%s\\n" "$output"
+}
+
+case "${1:-}" in
+  bar)
+    exec qs --path "$MYWM_SHELL_DIR/bar.qml" --no-duplicate
+    ;;
+  launcher)
+    export MYWM_TERMINAL_COUNT="${MYWM_TERMINAL_COUNT:-1}"
+    export MYWM_TERMINAL_0="${MYWM_TERMINAL_0:-kitty}"
+    exec qs --path "$MYWM_SHELL_DIR/shell.qml" --no-duplicate
+    ;;
+  wallpaper)
+    mkdir -p "$(dirname "$MYWM_WALLPAPER_STATE")"
+    export MYWM_WALLPAPER_HELPER=$0
+    exec qs --path "$MYWM_SHELL_DIR/wallpaper.qml" --no-duplicate
+    ;;
+  wallpaper-picker)
+    exec qs ipc --path "$MYWM_SHELL_DIR/wallpaper.qml" call wallpaper openPicker "${2:-0}" "${3:-0}"
+    ;;
+  wallpaper-list)
+    while IFS= read -r -d "" file; do
+      case "${file,,}" in
+        *.jpg|*.jpeg|*.png|*.webp|*.bmp) urlencode_path "$file" ;;
+      esac
+    done < <(find "$MYWM_WALLPAPER_DIRECTORY" -maxdepth 1 -type f -print0 | sort -z)
+    ;;
+  lock)
+    exec swaylock --config /dev/null --show-keyboard-layout --indicator-idle-visible \
+      --color "${MYWM_COLOR_BACKGROUND#\#}" \
+      --inside-color "${MYWM_COLOR_SURFACE#\#}" \
+      --ring-color "${MYWM_COLOR_ACCENT#\#}" \
+      --text-color "${MYWM_COLOR_TEXT#\#}" \
+      --key-hl-color "${MYWM_COLOR_TEXT#\#}" \
+      --bs-hl-color "${MYWM_COLOR_MUTED#\#}" \
+      --line-uses-ring
+    ;;
+  idle)
+    self=$(readlink -f "$0")
+    lock_after=${MYWM_LOCK_AFTER_SECONDS:-600}
+    off_after=${MYWM_MONITOR_OFF_AFTER_SECONDS:-6000}
+    exec swayidle -w -C /dev/null \
+      timeout "$lock_after" "'$self' lock" \
+      timeout "$off_after" "'$self' lock && wlopm --off '*'" \
+      resume "wlopm --on '*'" \
+      before-sleep "'$self' lock" \
+      after-resume "wlopm --on '*'" \
+      lock "'$self' lock"
+    ;;
+  *)
+    echo "usage: mywm-shell {bar|launcher|wallpaper|wallpaper-picker|wallpaper-list|lock|idle}" >&2
+    exit 2
+    ;;
+esac
