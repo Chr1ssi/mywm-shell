@@ -43,7 +43,7 @@ case "${1:-}" in
   wallpaper-picker)
     exec qs ipc --path "$MYWM_SHELL_DIR/wallpaper.qml" call wallpaper openPicker "${2:-0}" "${3:-0}"
     ;;
-  wallpaper-list)
+  wallpaper-list|--wallpaper-list)
     while IFS= read -r -d "" file; do
       case "${file,,}" in
         *.jpg|*.jpeg|*.png|*.webp|*.bmp) urlencode_path "$file" ;;
