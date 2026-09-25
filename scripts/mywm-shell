@@ -48,7 +48,7 @@ case "${1:-}" in
       case "${file,,}" in
         *.jpg|*.jpeg|*.png|*.webp|*.bmp) urlencode_path "$file" ;;
       esac
-    done < <(find "$MYWM_WALLPAPER_DIRECTORY" -maxdepth 1 -type f -print0 | sort -z)
+    done < <(find -L "$MYWM_WALLPAPER_DIRECTORY" -maxdepth 1 -type f -print0 | sort -z)
     ;;
   lock)
     exec swaylock --config /dev/null --show-keyboard-layout --indicator-idle-visible \
