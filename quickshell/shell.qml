@@ -27,6 +27,15 @@ ShellRoot {
     onQueryChanged: selected = 0
     onResultsChanged: selected = Math.max(0, Math.min(selected, results.length - 1))
 
+    function iconName(entry): string {
+        const id = String(entry.id || "").toLocaleLowerCase();
+        const command = Array.from(entry.command || []).join(" ").toLocaleLowerCase();
+        if (id.includes("nemo") || command.includes("nemo")) return "nemo";
+        if (id.includes("nm-connection-editor") || command.includes("nm-connection-editor"))
+            return "nm-device-wired";
+        return entry.icon || "application-x-executable";
+    }
+
     function move(delta: int): void {
         if (results.length === 0) return;
         selected = (selected + delta + results.length) % results.length;
@@ -158,7 +167,7 @@ ShellRoot {
                             anchors.verticalCenter: parent.verticalCenter
                             width: 32
                             height: 32
-                            source: Quickshell.iconPath(row.modelData.icon || "application-x-executable", true)
+                            source: Quickshell.iconPath(root.iconName(row.modelData), true)
                             sourceSize.width: 32
                             sourceSize.height: 32
                         }
