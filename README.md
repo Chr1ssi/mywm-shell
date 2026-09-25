@@ -1,7 +1,7 @@
 # mywm-shell
 
-Eigene Quickshell-Oberfläche für mywm: Bar, Launcher, Audio, Medien, Systemtray
-und ein durchgehendes Wallpaper mit Picker. Benachrichtigungen sind noch geplant.
+Gemeinsame Quickshell-Oberfläche für mywm und Niri: Bar, Launcher, Audio, Medien, Systemtray,
+Benachrichtigungen und ein durchgehendes Wallpaper mit Picker.
 
 ## Entwicklung
 
@@ -15,7 +15,7 @@ Projects/
     └── tests/
 ```
 
-Benötigt werden Quickshell (getestet mit 0.3.1), River und das gebaute mywm.
+Benötigt werden Quickshell (getestet mit 0.3.1) und das gebaute mywm. Als Compositor werden River mit mywm sowie Niri unterstützt.
 Der Sitzungsstart in mywm verwaltet Bar und Wallpaper. `mywm --bar` und
 `mywm --wallpaper` übergeben Theme und Hilfsprogramme; Super+Space öffnet den Launcher.
 `MYWM_SHELL_DIR` kann auf einen anderen absoluten QML-Ordner zeigen.
@@ -23,7 +23,7 @@ Der Sitzungsstart in mywm verwaltet Bar und Wallpaper. `mywm --bar` und
 Die gemeinsame Palette bleibt in mywms TOML unter `[appearance]`.
 IPC, Umgebungsvariablen und Hilfsbefehle sind im
 [Integrationsvertrag](../mywm/docs/quickshell.md) beschrieben.
-Die Shell benötigt derzeit weiterhin mywm für Wallpaper-Dateiliste und Sitzungssperre.
+Die Shell verwendet mywm compositorunabhängig für Theme, Launcher, Wallpaper, Idle-Verhalten und Sitzungssperre. Die Bar erkennt `MYWM_SOCKET` oder `NIRI_SOCKET` automatisch; unter Niri liest sie den JSON-Eventstream und steuert benannte Workspaces über `niri msg`.
 
 ## Tests
 
