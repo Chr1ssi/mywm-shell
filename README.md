@@ -64,6 +64,9 @@ Die zentrale TOML-Palette von mywm färbt alle Komponenten ein. Die Bar bleibt
   Lautstärke und Stummschaltung. Rechtsklick auf das Audio-Symbol schaltet stumm,
   Mausrad ändert die Lautstärke in 5-Prozent-Schritten. Gerätewechsel benötigen
   einen PipeWire-Sessionmanager wie WirePlumber.
+- **Kalender:** Klick auf Datum und Uhrzeit öffnet eine Monatsübersicht und die
+  nächsten Termine. Die Termine werden über `mywm-calendar events` geladen; der
+  Knopf am Panelende startet die vollständige Kalender-App.
 - **Medien:** Ein laufender MPRIS-Player erscheint mittig direkt neben Datum
   und Uhrzeit. Wenn nichts wiedergegeben wird, bleibt der Medienbereich komplett
   ausgeblendet. Ein Klick öffnet mittig das Panel mit Cover, Titel, Interpret
@@ -82,7 +85,7 @@ Die zentrale TOML-Palette von mywm färbt alle Komponenten ein. Die Bar bleibt
   Escape, ein Klick außerhalb oder „Abbrechen“ stoppen den Countdown. Tab und
   Enter erlauben Tastaturbedienung.
 
-Audio- und Medienpanels schließen über × oder Escape. Sie und das Powermenü
+Kalender-, Audio- und Medienpanels schließen über × oder Escape. Sie und das Powermenü
 öffnen auf dem Monitor der angeklickten Bar.
 
 Gestaltungsreferenzen: [Omarchy Image Picker](https://github.com/basecamp/omarchy/blob/quattro/shell/plugins/image-picker/ImagePicker.qml)

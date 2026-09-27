@@ -177,7 +177,7 @@ ShellRoot {
         function mute(): void { root.toggleMute(); }
         function workspace(output: string, number: int): void { root.send("workspace " + output + " " + number); }
         function panel(index: int, name: string): void {
-            if (index >= 0 && index < bars.instances.length && ["", "audio", "media", "notifications"].includes(name)) bars.instances[index].activePanel = name;
+            if (index >= 0 && index < bars.instances.length && ["", "audio", "calendar", "media", "notifications"].includes(name)) bars.instances[index].activePanel = name;
         }
         function menu(index: int): void { bars.instances[index].menuOpen = true; }
         function choosePower(index: int, action: string): void { bars.instances[index].choosePower(action); }
@@ -327,11 +327,11 @@ ShellRoot {
                     selected: bar.activePanel === "media"
                     onClicked: bar.activePanel = selected ? "" : "media"
                 }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
+                BarButton {
+                    theme: root.theme
                     text: root.clockText
-                    color: root.theme.textColor
-                    font.family: root.theme.fontFamily; font.pixelSize: 12
+                    selected: bar.activePanel === "calendar"
+                    onClicked: bar.activePanel = selected ? "" : "calendar"
                 }
             }
             Row {
@@ -471,7 +471,7 @@ ShellRoot {
                             width: parent.width
                             Text {
                                 width: parent.width
-                                text: bar.activePanel === "audio" ? "Audio" : bar.activePanel === "media" ? "Medien" : "Benachrichtigungen"
+                                text: bar.activePanel === "audio" ? "Audio" : bar.activePanel === "media" ? "Medien" : bar.activePanel === "calendar" ? "Kalender" : "Benachrichtigungen"
                                 color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 18
                             }
                         }
@@ -482,13 +482,14 @@ ShellRoot {
                             Loader {
                                 id: panelLoader
                                 width: parent.width
-                                sourceComponent: bar.activePanel === "audio" ? audioPanel : bar.activePanel === "media" ? mediaPanel : notificationPanel
+                                sourceComponent: bar.activePanel === "audio" ? audioPanel : bar.activePanel === "media" ? mediaPanel : bar.activePanel === "calendar" ? calendarPanel : notificationPanel
                             }
                         }
                     }
                 }
                 Component { id: audioPanel; AudioPanel { theme: root.theme } }
                 Component { id: mediaPanel; MediaPanel { theme: root.theme } }
+                Component { id: calendarPanel; CalendarPanel { theme: root.theme } }
                 Component {
                     id: notificationPanel
                     NotificationCenter {

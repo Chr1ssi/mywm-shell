@@ -111,7 +111,7 @@ def main():
                     assert b"v1 error" in client.recv(4096)
                 if os.environ.get("MYWM_BAR_SCREENSHOT"):
                     subprocess.run(["grim", os.environ["MYWM_BAR_SCREENSHOT"]], env=env, check=True)
-                for panel in ["audio", "media", "notifications"]:
+                for panel in ["audio", "calendar", "media", "notifications"]:
                     assert ipc("panel", 0, panel).returncode == 0
                     time.sleep(0.3)
                     screenshot = os.environ.get("MYWM_" + panel.upper() + "_SCREENSHOT")
