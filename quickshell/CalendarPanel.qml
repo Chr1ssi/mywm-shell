@@ -127,20 +127,31 @@ Column {
             required property var modelData
             width: panel.width; height: eventColumn.implicitHeight + 14; radius: 10
             color: panel.theme.surfaceColor
-            Column {
-                id: eventColumn
+            Row {
                 anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; margins: 10 }
-                spacing: 2
-                Text {
-                    width: parent.width; text: modelData.title || "(Ohne Titel)"; elide: Text.ElideRight
-                    color: panel.theme.textColor
-                    font.family: panel.theme.fontFamily; font.pixelSize: 13
+                spacing: 9
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 4; height: eventColumn.height; radius: 2
+                    color: modelData.color || panel.theme.accentColor
                 }
-                Text {
-                    width: parent.width
-                    text: panel.eventTime(modelData.start) + (modelData.location ? "  ·  " + modelData.location : "")
-                    elide: Text.ElideRight; color: panel.theme.mutedColor
-                    font.family: panel.theme.fontFamily; font.pixelSize: 11
+                Column {
+                    id: eventColumn
+                    width: parent.width - 13
+                    spacing: 2
+                    Text {
+                        width: parent.width; text: modelData.title || "(Ohne Titel)"; elide: Text.ElideRight
+                        color: panel.theme.textColor
+                        font.family: panel.theme.fontFamily; font.pixelSize: 13
+                    }
+                    Text {
+                        width: parent.width
+                        text: panel.eventTime(modelData.start)
+                            + "  ·  " + modelData.calendar
+                            + (modelData.location ? "  ·  " + modelData.location : "")
+                        elide: Text.ElideRight; color: panel.theme.mutedColor
+                        font.family: panel.theme.fontFamily; font.pixelSize: 11
+                    }
                 }
             }
         }
