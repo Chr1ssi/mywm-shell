@@ -77,8 +77,10 @@ Die zentrale TOML-Palette von mywm färbt alle Komponenten ein. Die Bar bleibt
   Verlauf hinter dem Glockensymbol. Kritische Meldungen bleiben stehen, normale
   und niedrige Dringlichkeiten verschwinden nach ihrer jeweiligen Ablaufzeit.
 - **Power:** Mittige, schwebende Icon-Auswahl für Sperren, Abmelden, Neustart und
-  Ausschalten. Die letzten drei Aktionen verlangen weiterhin Bestätigung.
-  Escape schließt das Menü; Tab und Enter erlauben Tastaturbedienung.
+  Ausschalten. Für die letzten drei Aktionen erscheint ein icon-zentrierter
+  Fünf-Sekunden-Countdown; danach wird die Aktion automatisch ausgeführt.
+  Escape, ein Klick außerhalb oder „Abbrechen“ stoppen den Countdown. Tab und
+  Enter erlauben Tastaturbedienung.
 
 Audio- und Medienpanels schließen über × oder Escape. Sie und das Powermenü
 öffnen auf dem Monitor der angeklickten Bar.

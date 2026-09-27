@@ -181,7 +181,6 @@ ShellRoot {
         }
         function menu(index: int): void { bars.instances[index].menuOpen = true; }
         function choosePower(index: int, action: string): void { bars.instances[index].choosePower(action); }
-        function confirmPower(index: int): void { bars.instances[index].confirmPower(); }
     }
     Variants {
         id: bars
@@ -196,19 +195,69 @@ ShellRoot {
             property string activePanel: ""
             property var trayMenu: null
             property string trayMenuTitle: ""
-            onMenuOpenChanged: if (menuOpen) { activePanel = ""; trayMenu = null; }
+            onMenuOpenChanged: {
+                if (menuOpen) {
+                    activePanel = "";
+                    trayMenu = null;
+                } else {
+                    powerCountdown.stop();
+                    powerCountdownAnimation.stop();
+                    pending = "";
+                    countdownProgress = 1;
+                }
+            }
             onActivePanelChanged: if (activePanel) { menuOpen = false; trayMenu = null; }
             property string pending: ""
             property string errorText: ""
+            property real countdownProgress: 1
+            readonly property var powerActions: ({
+                logout: { title: "Abmelden", icon: "󰍃" },
+                reboot: { title: "Neu starten", icon: "󰜉" },
+                poweroff: { title: "Ausschalten", icon: "⏻" }
+            })
             function choosePower(action: string): void {
-                if (["logout", "reboot", "poweroff"].includes(action)) { pending = action; menuOpen = true; }
+                if (!["logout", "reboot", "poweroff"].includes(action)) return;
+                pending = action;
+                errorText = "";
+                countdownProgress = 1;
+                menuOpen = true;
+                powerCountdown.restart();
+                powerCountdownAnimation.restart();
             }
-            function confirmPower(): void {
-                if (powerProcess.running || !menuOpen) return;
-                if (pending === "logout") { root.send("logout"); menuOpen = false; }
-                else if (["reboot", "poweroff"].includes(pending)) {
-                    powerProcess.command = ["systemctl", pending]; powerProcess.running = true;
+            function cancelPower(): void {
+                powerCountdown.stop();
+                powerCountdownAnimation.stop();
+                pending = "";
+                errorText = "";
+                menuOpen = false;
+                countdownProgress = 1;
+            }
+            function executePower(): void {
+                if (powerProcess.running || !menuOpen || !pending) return;
+                powerCountdown.stop();
+                powerCountdownAnimation.stop();
+                countdownProgress = 0;
+                if (pending === "logout") {
+                    root.send("logout");
+                    menuOpen = false;
+                } else if (["reboot", "poweroff"].includes(pending)) {
+                    powerProcess.command = ["systemctl", pending];
+                    powerProcess.running = true;
                 }
+            }
+            Timer {
+                id: powerCountdown
+                interval: 5000
+                onTriggered: bar.executePower()
+            }
+            NumberAnimation {
+                id: powerCountdownAnimation
+                target: bar
+                property: "countdownProgress"
+                from: 1
+                to: 0
+                duration: 5000
+                easing.type: Easing.Linear
             }
             function openTrayMenu(item): void {
                 if (!item.hasMenu || !item.menu) return;
@@ -332,14 +381,20 @@ ShellRoot {
                     theme: root.theme
                     text: "⏻"
                     selected: bar.menuOpen
-                    onClicked: { bar.pending = ""; bar.errorText = ""; bar.menuOpen = !bar.menuOpen; }
+                    onClicked: {
+                        if (bar.menuOpen) bar.cancelPower();
+                        else bar.menuOpen = true;
+                    }
                 }
             }
 
             Process {
                 id: powerProcess
                 onExited: (exitCode, exitStatus) => {
-                    if (exitCode !== 0) bar.errorText = "Aktion fehlgeschlagen (" + exitCode + ")";
+                    if (exitCode !== 0) {
+                        bar.pending = "";
+                        bar.errorText = "Aktion fehlgeschlagen (" + exitCode + ")";
+                    }
                     else bar.menuOpen = false;
                 }
             }
@@ -448,8 +503,7 @@ ShellRoot {
                 id: menu
                 screen: bar.screen
                 visible: bar.menuOpen
-                implicitWidth: Math.min(620, bar.screen.width - 32)
-                implicitHeight: 260
+                anchors { top: true; bottom: true; left: true; right: true }
                 exclusionMode: ExclusionMode.Ignore
                 WlrLayershell.layer: WlrLayer.Overlay
                 WlrLayershell.namespace: "mywm-power"
@@ -458,24 +512,41 @@ ShellRoot {
                 property bool gainedFocus: false
                 onVisibleChanged: if (!visible) gainedFocus = false
                 Rectangle {
+                    anchors.fill: parent
+                    color: "#66000000"
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: bar.cancelPower()
+                }
+                Rectangle {
                     id: menuRoot
-                    anchors.fill: parent; color: root.theme.backgroundColor; radius: 24
+                    anchors.centerIn: parent
+                    width: bar.pending ? 380 : Math.min(620, menu.width - 32)
+                    height: bar.pending ? 330 : 260
+                    color: root.theme.backgroundColor; radius: 24
                     border.color: root.theme.borderColor
                     focus: true
+                    Behavior on width { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                    Behavior on height { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: mouse => mouse.accepted = true
+                    }
                     property bool windowActive: Window.active
                     onWindowActiveChanged: {
                         if (windowActive) menu.gainedFocus = true;
                         else if (menu.visible && menu.gainedFocus) {
-                            bar.menuOpen = false;
-                            bar.pending = "";
+                            bar.cancelPower();
                         }
                     }
-                    Keys.onEscapePressed: { bar.menuOpen = false; bar.pending = ""; }
+                    Keys.onEscapePressed: bar.cancelPower()
                     Column {
                         anchors.fill: parent; anchors.margins: 24; spacing: 22
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            text: bar.pending ? ({logout: "Abmelden?", reboot: "Neu starten?", poweroff: "Ausschalten?"})[bar.pending] : "Sitzung und System"
+                            visible: bar.pending === ""
+                            text: "Sitzung und System"
                             color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 20
                         }
                         Row {
@@ -506,12 +577,69 @@ ShellRoot {
                                 }
                             }
                         }
-                        Row {
-                            visible: bar.pending !== ""; anchors.horizontalCenter: parent.horizontalCenter; spacing: 20
-                            BarButton { theme: root.theme; text: "Abbrechen"; height: 44; onClicked: { bar.pending = ""; bar.errorText = ""; } }
-                            BarButton { theme: root.theme; text: "Bestätigen"; height: 44; selected: true; enabled: !powerProcess.running && (bar.pending !== "logout" || root.backendAvailable); onClicked: bar.confirmPower() }
+                        Column {
+                            visible: bar.pending !== ""
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            spacing: 14
+                            Item {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                width: 112; height: 112
+                                Canvas {
+                                    anchors.fill: parent
+                                    property real progress: bar.countdownProgress
+                                    onProgressChanged: requestPaint()
+                                    onPaint: {
+                                        const context = getContext("2d");
+                                        context.reset();
+                                        context.lineWidth = 5;
+                                        context.lineCap = "round";
+                                        context.strokeStyle = root.theme.borderColor;
+                                        context.beginPath();
+                                        context.arc(width / 2, height / 2, 50, 0, Math.PI * 2);
+                                        context.stroke();
+                                        context.strokeStyle = root.theme.accentColor;
+                                        context.beginPath();
+                                        context.arc(width / 2, height / 2, 50, -Math.PI / 2,
+                                            -Math.PI / 2 + Math.PI * 2 * progress);
+                                        context.stroke();
+                                    }
+                                }
+                                Rectangle {
+                                    anchors.centerIn: parent
+                                    width: 88; height: 88; radius: 44
+                                    color: root.theme.surfaceColor
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: bar.pending ? bar.powerActions[bar.pending].icon : ""
+                                        color: root.theme.accentColor
+                                        font.family: root.theme.fontFamily; font.pixelSize: 42
+                                    }
+                                }
+                            }
+                            Text {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: bar.pending ? bar.powerActions[bar.pending].title : ""
+                                color: root.theme.textColor
+                                font.family: root.theme.fontFamily; font.pixelSize: 20; font.bold: true
+                            }
+                            Text {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: "Automatisch in " + Math.max(1, Math.ceil(bar.countdownProgress * 5)) + " Sekunden"
+                                color: root.theme.mutedColor
+                                font.family: root.theme.fontFamily; font.pixelSize: 12
+                            }
+                            BarButton {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                theme: root.theme; text: "Abbrechen"; height: 40
+                                onClicked: bar.cancelPower()
+                            }
                         }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: bar.errorText || "Esc zum Schließen"; color: root.theme.mutedColor; font.family: root.theme.fontFamily; font.pixelSize: 12 }
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            visible: bar.pending === "" || bar.errorText !== ""
+                            text: bar.errorText || "Esc zum Schließen"
+                            color: root.theme.mutedColor; font.family: root.theme.fontFamily; font.pixelSize: 12
+                        }
                     }
                 }
             }
