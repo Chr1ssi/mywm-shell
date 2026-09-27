@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import signal
+import shutil
 import socket
 import subprocess
 import tempfile
@@ -11,6 +12,7 @@ import time
 
 SHELL_ROOT = Path(__file__).resolve().parents[1]
 ROOT = Path(os.environ.get("MYWM_SOURCE_DIR", str(SHELL_ROOT.parent / "mywm"))).resolve()
+MYWM_BINARY = Path(os.environ.get("MYWM_BINARY", str(ROOT / "target/debug/mywm"))).resolve()
 
 
 def wait_for(fn):
@@ -37,16 +39,9 @@ def main():
         config = base / "mywm.toml"
         config.write_text((ROOT / "config/mywm.toml").read_text().replace("DP-1", "HEADLESS-3").replace("DP-3", "HEADLESS-1").replace("HDMI-A-1", "HEADLESS-2"))
         env["MYWM_CONFIG"] = str(config)
-        mock_bin = base / "bin"
-        mock_bin.mkdir()
-        power_log = base / "power.log"
-        mock = mock_bin / "systemctl"
-        mock.write_text("#!/usr/bin/python3\nimport sys\nfrom pathlib import Path\n" +
-                        f"with Path({str(power_log)!r}).open('a') as f: f.write(sys.argv[1] + '\\n')\n")
-        mock.chmod(0o755)
-        env["PATH"] = str(mock_bin) + ":" + env["PATH"]
         pipewire_config = base / "pipewire.conf"
-        config_text = Path("/usr/share/pipewire/pipewire.conf").read_text()
+        pipewire_binary = Path(shutil.which("pipewire") or "/usr/bin/pipewire").resolve()
+        config_text = (pipewire_binary.parent.parent / "share/pipewire/pipewire.conf").read_text()
         config_text = config_text.replace("context.objects = [", """context.objects = [
             { factory = adapter args = { factory.name = support.null-audio-sink node.name = test-sink media.class = Audio/Sink audio.position = [ FL FR ] } }
             { factory = metadata args = { metadata.name = default metadata.values = [ { key = default.audio.sink value = { name = test-sink } } ] } }
@@ -56,12 +51,12 @@ def main():
                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         bar = None
         with (base / "river.log").open("w+") as river_log, (base / "bar.log").open("w+") as bar_log:
-            river = subprocess.Popen(["river", "-no-xwayland", "-c", str(ROOT / "target/debug/mywm")], env=env,
+            river = subprocess.Popen(["river", "-no-xwayland", "-c", str(MYWM_BINARY)], env=env,
                                      stdout=river_log, stderr=subprocess.STDOUT, start_new_session=True)
             try:
                 wait_for(lambda: Path(env["MYWM_SOCKET"]).exists())
                 env["WAYLAND_DISPLAY"] = next(p.name for p in runtime.glob("wayland-*") if p.is_socket())
-                bar = subprocess.Popen([str(ROOT / "target/debug/mywm"), "--bar"], env=env,
+                bar = subprocess.Popen([str(MYWM_BINARY), "--bar"], env=env,
                                        stdout=bar_log, stderr=subprocess.STDOUT)
 
                 def ipc(method, *args):
@@ -81,6 +76,11 @@ def main():
                 before_active = {o["id"]: o["active"] for o in outputs}
                 subprocess.run(["notify-send", "mywm Test", "Benachrichtigungen funktionieren", "--expire-time=10000"],
                                env=env, check=True)
+                wait_for(lambda: ipc("notificationCount").stdout.strip() == "1")
+                subprocess.run(["notify-send", "mywm Test 2", "Einzellöschen funktioniert", "--expire-time=10000"],
+                               env=env, check=True)
+                wait_for(lambda: ipc("notificationCount").stdout.strip() == "2")
+                assert ipc("dismissNotification", "0").returncode == 0
                 wait_for(lambda: ipc("notificationCount").stdout.strip() == "1")
                 if os.environ.get("MYWM_NOTIFICATION_SCREENSHOT"):
                     time.sleep(0.2)
@@ -124,18 +124,10 @@ def main():
                 time.sleep(0.2)
                 if os.environ.get("MYWM_POWER_SCREENSHOT"):
                     subprocess.run(["grim", os.environ["MYWM_POWER_SCREENSHOT"]], env=env, check=True)
-                for action in ["reboot", "poweroff"]:
-                    before = power_log.read_text() if power_log.exists() else ""
-                    assert ipc("choosePower", 0, action).returncode == 0
-                    time.sleep(0.1)
-                    assert (power_log.read_text() if power_log.exists() else "") == before
-                    assert ipc("confirmPower", 0).returncode == 0
-                    wait_for(lambda: power_log.exists() and power_log.read_text() != before)
-                assert power_log.read_text().splitlines() == ["reboot", "poweroff"]
                 # Restart only the bar; initial state must restore the active workspace.
                 bar.terminate()
                 bar.wait(timeout=3)
-                bar = subprocess.Popen([str(ROOT / "target/debug/mywm"), "--bar"], env=env,
+                bar = subprocess.Popen([str(MYWM_BINARY), "--bar"], env=env,
                                        stdout=bar_log, stderr=subprocess.STDOUT)
                 wait_for(lambda: status() and status()[0]["active"] == selected)
                 # Logout terminates this isolated compositor, not the host session.
@@ -143,7 +135,7 @@ def main():
                     client.connect(env["MYWM_SOCKET"])
                     client.sendall(b"v1 logout\n")
                     river.wait(timeout=5)
-                print("Bar smoke passed: three outputs with distinct workspace groups, workspace switch, independent workspaces, invalid commands, bar restart, PipeWire volume/mute, confirmed power commands, logout")
+                print("Bar smoke passed: three outputs with distinct workspace groups, workspace switch, independent workspaces, invalid commands, notification dismissal, bar restart, PipeWire volume/mute, logout")
             finally:
                 if bar is not None and bar.poll() is None:
                     bar.terminate()

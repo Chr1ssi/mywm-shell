@@ -44,7 +44,7 @@ Column {
             width: list.width - (list.ScrollBar.vertical.visible ? 10 : 0)
             notification: modelData
             theme: center.theme
-            onCloseRequested: center.dismiss(modelData)
+            onCloseRequested: center.dismiss(notification)
         }
         Text {
             anchors.centerIn: parent

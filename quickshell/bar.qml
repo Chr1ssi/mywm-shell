@@ -99,8 +99,8 @@ ShellRoot {
         rebuildNiriOutputs();
     }
     function removeNotification(notification): void {
-        toastNotifications = toastNotifications.filter(item => item !== notification);
-        notifications = notifications.filter(item => item !== notification);
+        toastNotifications = toastNotifications.filter(item => item.id !== notification.id);
+        notifications = notifications.filter(item => item.id !== notification.id);
     }
     function markNotificationClosed(notification): void {
         if (!closedNotificationIds.includes(notification.id))
@@ -168,6 +168,10 @@ ShellRoot {
         function status(): string { return JSON.stringify(root.outputs); }
         function audioStatus(): string { return JSON.stringify(root.audio ? {volume: root.audio.volume, muted: root.audio.muted} : null); }
         function notificationCount(): int { return root.notifications.length; }
+        function dismissNotification(index: int): void {
+            if (index >= 0 && index < root.notifications.length)
+                root.dismissNotification(root.notifications[index]);
+        }
         function clearNotifications(): void { root.clearNotifications(); }
         function volume(value: real): void { root.setVolume(value); }
         function mute(): void { root.toggleMute(); }
@@ -544,7 +548,7 @@ ShellRoot {
                         notification: modelData
                         theme: root.theme
                         compact: true
-                        onCloseRequested: root.dismissNotification(modelData)
+                        onCloseRequested: root.dismissNotification(notification)
                         Timer {
                             readonly property int requested: toast.modelData.expireTimeout
                             interval: requested > 0 ? requested : toast.modelData.urgency === NotificationUrgency.Low ? 4000 : 7000
