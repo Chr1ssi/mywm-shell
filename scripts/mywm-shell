@@ -29,6 +29,11 @@ urlencode_path() {
 
 case "${1:-}" in
   bar)
+    if [[ -n "${MYWM_THEME_HELPER:-}" ]]; then
+      "$MYWM_THEME_HELPER" --theme-from-state \
+        "$MYWM_WALLPAPER_STATE" "$MYWM_WALLPAPER_DIRECTORY" || \
+        echo 'Warnung: Theme konnte beim Sitzungsstart nicht aus dem Wallpaper erzeugt werden.' >&2
+    fi
     exec qs --path "$MYWM_SHELL_DIR/bar.qml" --no-duplicate
     ;;
   launcher)
