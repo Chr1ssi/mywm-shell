@@ -65,6 +65,12 @@ ShellRoot {
         }
         onExited: (code, status) => { if (code !== 0) root.errorText = "Bildordner konnte nicht gelesen werden: " + root.directory; }
     }
+    Process {
+        id: themeApply
+        onExited: (code, status) => {
+            if (code !== 0) root.errorText = "Farbschema konnte nicht erzeugt werden.";
+        }
+    }
     FileView {
         id: stateFile
         path: Quickshell.env("MYWM_WALLPAPER_STATE") || ""
@@ -84,6 +90,12 @@ ShellRoot {
             root.wallpaper = String(validation.source);
             root.saving = false;
             root.pickerOpen = false;
+            const helper = Quickshell.env("MYWM_THEME_HELPER");
+            if (helper) {
+                const path = decodeURIComponent(root.wallpaper.replace(/^file:\/\//, ""));
+                themeApply.command = [helper, "--theme-from-wallpaper", path];
+                themeApply.running = true;
+            }
         }
         onSaveFailed: { root.saving = false; root.errorText = "Auswahl konnte nicht gespeichert werden."; }
     }

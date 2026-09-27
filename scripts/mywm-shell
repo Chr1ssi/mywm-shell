@@ -12,6 +12,7 @@ export MYWM_COLOR_BORDER="${MYWM_SHELL_COLOR_BORDER:-#45475a}"
 export MYWM_WALLPAPER_DIRECTORY="${MYWM_WALLPAPER_DIRECTORY:-${XDG_PICTURES_DIR:-$HOME/Pictures}/Wallpapers}"
 state_home="${XDG_STATE_HOME:-$HOME/.local/state}"
 export MYWM_WALLPAPER_STATE="${MYWM_WALLPAPER_STATE:-$state_home/mywm-shell/wallpaper.json}"
+export MYWM_THEME_STATE="${MYWM_THEME_STATE:-$state_home/mywm/theme.json}"
 
 urlencode_path() {
   local input=$1 output=file:// char hex i
