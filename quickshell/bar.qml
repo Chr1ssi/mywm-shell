@@ -489,7 +489,7 @@ ShellRoot {
                 }
                 Component { id: audioPanel; AudioPanel { theme: root.theme } }
                 Component { id: mediaPanel; MediaPanel { theme: root.theme } }
-                Component { id: calendarPanel; CalendarPanel { theme: root.theme } }
+                Component { id: calendarPanel; CalendarPanelInteractive { theme: root.theme } }
                 Component {
                     id: notificationPanel
                     NotificationCenter {

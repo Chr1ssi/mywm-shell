@@ -64,9 +64,10 @@ Die zentrale TOML-Palette von mywm färbt alle Komponenten ein. Die Bar bleibt
   Lautstärke und Stummschaltung. Rechtsklick auf das Audio-Symbol schaltet stumm,
   Mausrad ändert die Lautstärke in 5-Prozent-Schritten. Gerätewechsel benötigen
   einen PipeWire-Sessionmanager wie WirePlumber.
-- **Kalender:** Klick auf Datum und Uhrzeit öffnet eine Monatsübersicht und die
-  nächsten Termine. Die Termine werden über `mywm-calendar events` geladen; der
-  Knopf am Panelende startet die vollständige Kalender-App.
+- **Kalender:** Klick auf Datum und Uhrzeit öffnet eine Monatsübersicht. Farbige
+  Punkte markieren Tage mit Terminen; ein Klick auf einen Tag zeigt dessen
+  Agenda. Über `+` lassen sich Termin, Uhrzeit, Ort und Zielkalender direkt im
+  Panel erfassen. Der Knopf am Panelende startet die vollständige Kalender-App.
 - **Medien:** Ein laufender MPRIS-Player erscheint mittig direkt neben Datum
   und Uhrzeit. Wenn nichts wiedergegeben wird, bleibt der Medienbereich komplett
   ausgeblendet. Ein Klick öffnet mittig das Panel mit Cover, Titel, Interpret
