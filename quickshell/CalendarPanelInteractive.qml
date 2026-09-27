@@ -49,6 +49,10 @@ Column {
         const target = isoDate(selectedDate);
         return events.filter(event => event.startDate <= target && event.endDate >= target);
     }
+    function upcomingEvents(): var {
+        const today = isoDate(new Date());
+        return events.filter(event => event.endDate >= today).slice(0, 8);
+    }
     function submitEvent(): void {
         const title = titleField.text.trim();
         const start = startField.text.trim();
@@ -163,7 +167,7 @@ Column {
         width: parent.width; spacing: 8
         Text {
             width: parent.width - 104
-            text: panel.selectedDate.toLocaleString(Qt.locale("de_DE"), "dddd, dd. MMMM")
+            text: "Termine am " + panel.selectedDate.toLocaleString(Qt.locale("de_DE"), "dd. MMMM")
             color: panel.theme.textColor; font.family: panel.theme.fontFamily; font.pixelSize: 14
         }
         BarButton { theme: panel.theme; text: "+"; selected: panel.createOpen; onClicked: panel.createOpen = !panel.createOpen }
@@ -227,6 +231,49 @@ Column {
     Text {
         visible: panel.errorText === "" && panel.selectedEvents().length === 0; width: parent.width
         text: "Keine Termine an diesem Tag."; color: panel.theme.mutedColor
+        font.family: panel.theme.fontFamily; font.pixelSize: 12
+    }
+    Rectangle { width: parent.width; height: 1; color: panel.theme.borderColor }
+    Text {
+        width: parent.width; text: "Nächste Termine"
+        color: panel.theme.textColor
+        font.family: panel.theme.fontFamily; font.pixelSize: 14
+    }
+    Repeater {
+        model: panel.upcomingEvents()
+        Rectangle {
+            required property var modelData
+            width: panel.width; height: upcomingColumn.implicitHeight + 14; radius: 10
+            color: panel.theme.surfaceColor
+            Row {
+                anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; margins: 10 }
+                spacing: 9
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 4; height: upcomingColumn.height; radius: 2
+                    color: modelData.color || panel.theme.accentColor
+                }
+                Column {
+                    id: upcomingColumn; width: parent.width - 13; spacing: 2
+                    Text {
+                        width: parent.width; text: modelData.title || "(Ohne Titel)"; elide: Text.ElideRight
+                        color: panel.theme.textColor; font.family: panel.theme.fontFamily; font.pixelSize: 13
+                    }
+                    Text {
+                        width: parent.width
+                        text: modelData.startDate.split("-").reverse().slice(0, 2).join(".") + ".  ·  "
+                            + (modelData.allDay ? "Ganztägig" : modelData.startTime + "–" + modelData.endTime)
+                            + "  ·  " + modelData.calendar
+                        elide: Text.ElideRight; color: panel.theme.mutedColor
+                        font.family: panel.theme.fontFamily; font.pixelSize: 11
+                    }
+                }
+            }
+        }
+    }
+    Text {
+        visible: panel.errorText === "" && panel.upcomingEvents().length === 0; width: parent.width
+        text: "Keine anstehenden Termine im geladenen Zeitraum."; color: panel.theme.mutedColor
         font.family: panel.theme.fontFamily; font.pixelSize: 12
     }
     BarButton {
