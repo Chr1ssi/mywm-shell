@@ -17,6 +17,8 @@ ShellRoot {
     readonly property bool niriBackend: (Quickshell.env("NIRI_SOCKET") || "") !== ""
     readonly property bool backendAvailable: socket.connected || niriBackend
     property int workspaceCount: 9
+    property bool scratchpadVisible: false
+    property bool scratchpadOccupied: false
     property var notifications: []
     property var toastNotifications: []
     property var closedNotificationIds: []
@@ -141,10 +143,19 @@ ShellRoot {
         id: socket
         path: Quickshell.env("MYWM_SOCKET") || ""
         connected: path !== ""
-        onConnectedChanged: if (!connected) root.outputs = []
+        onConnectedChanged: if (!connected) {
+            root.outputs = [];
+            root.scratchpadVisible = false;
+            root.scratchpadOccupied = false;
+        }
         parser: SplitParser {
             onRead: data => {
                 const parts = data.trim().split(" ");
+                if (parts[0] === "v1" && parts[1] === "scratchpad") {
+                    root.scratchpadVisible = parts[2] === "1";
+                    root.scratchpadOccupied = parts[3] === "1";
+                    return;
+                }
                 if (parts[0] !== "v1" || parts[1] !== "state") return;
                 root.workspaceCount = Number(parts[2]);
                 root.outputs = (parts[3] || "").split(";").filter(s => s.length).map(s => {
@@ -313,6 +324,15 @@ ShellRoot {
                         marked: bar.output !== null && (bar.output.occupied & (1 << (modelData - 1))) !== 0
                         onClicked: root.send("workspace " + bar.output.id + " " + modelData)
                     }
+                }
+                BarButton {
+                    visible: root.scratchpadOccupied
+                    width: visible ? 24 : 0
+                    theme: root.theme
+                    text: "S"
+                    selected: root.scratchpadVisible
+                    marked: root.scratchpadOccupied
+                    onClicked: root.send("scratchpad")
                 }
             }
             Row {
