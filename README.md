@@ -1,6 +1,6 @@
 # mywm-shell
 
-Gemeinsame Quickshell-Oberfläche für mywm und Niri: Bar, Launcher, Audio, Medien, Systemtray,
+Quickshell-Oberfläche für mywm: Bar, Launcher, Audio, Medien, Systemtray,
 Benachrichtigungen und ein durchgehendes Wallpaper mit Picker.
 
 ## Entwicklung
@@ -15,13 +15,13 @@ Projects/
     └── tests/
 ```
 
-Der Flake stellt ein eigenständiges `mywm-shell`-Paket bereit. Als Compositor werden River mit mywm sowie Niri unterstützt; Niri benötigt das mywm-Paket nicht.
+Der Flake stellt ein eigenständiges `mywm-shell`-Paket bereit.
 Der Sitzungsstart in mywm verwaltet Bar und Wallpaper. `mywm --bar` und
 `mywm --wallpaper` übergeben Theme und Hilfsprogramme; Super+Space öffnet den Launcher.
 `MYWM_SHELL_DIR` kann auf einen anderen absoluten QML-Ordner zeigen.
 
 Die gemeinsame Palette bleibt in mywms TOML unter `[appearance]`.
-Das eigenständige `mywm-shell`-Programm startet Bar, Launcher, Wallpaper, Picker, Idle-Verhalten und Sitzungssperre. Die Bar erkennt `MYWM_SOCKET` oder `NIRI_SOCKET` automatisch; unter Niri liest sie den JSON-Eventstream und steuert benannte Workspaces über `niri msg`.
+Das eigenständige `mywm-shell`-Programm startet Bar, Launcher, Wallpaper, Picker, Idle-Verhalten und Sitzungssperre. Die Bar kommuniziert über `MYWM_SOCKET` mit mywm.
 
 ## Eigenständiges Paket
 

@@ -10,7 +10,7 @@ import tempfile
 import time
 import zlib
 
-from bar_smoke import ROOT, SHELL_ROOT, wait_for
+from bar_smoke import MYWM_BINARY, ROOT, SHELL_ROOT, wait_for
 
 
 def gradient_png(path):
@@ -40,13 +40,13 @@ def main():
             env.pop(key, None)
         shell = kanshi = None
         with (base/'river.log').open('w+') as river_log, (base/'shell.log').open('w+') as shell_log:
-            river = subprocess.Popen(['river', '-no-xwayland', '-c', str(ROOT/'target/debug/mywm')], env=env,
+            river = subprocess.Popen(['river', '-no-xwayland', '-c', str(MYWM_BINARY)], env=env,
                                      stdout=river_log, stderr=subprocess.STDOUT, start_new_session=True)
             try:
                 wait_for(lambda: Path(env['MYWM_SOCKET']).exists())
                 env['WAYLAND_DISPLAY'] = next(p.name for p in runtime.glob('wayland-*') if p.is_socket())
                 def start():
-                    return subprocess.Popen([str(ROOT/'target/debug/mywm'), '--wallpaper'], env=env, stdout=shell_log, stderr=subprocess.STDOUT)
+                    return subprocess.Popen([str(MYWM_BINARY), '--wallpaper'], env=env, stdout=shell_log, stderr=subprocess.STDOUT)
                 shell = start()
                 def ipc(method, *args):
                     if shell.poll() is not None:

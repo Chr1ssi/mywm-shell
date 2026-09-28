@@ -10,6 +10,7 @@ import time
 
 SHELL_ROOT = Path(__file__).resolve().parents[1]
 ROOT = Path(os.environ.get("MYWM_SOURCE_DIR", str(SHELL_ROOT.parent / "mywm"))).resolve()
+MYWM_BINARY = Path(os.environ.get("MYWM_BINARY", str(ROOT / "target/debug/mywm"))).resolve()
 
 
 def wait_until(predicate, timeout=8):
@@ -32,11 +33,11 @@ def main():
         marker = base / "launched.json"
         terminal_marker = base / "terminal.json"
         probe = base / "probe"
-        probe.write_text("#!/usr/bin/python3\nimport json,os,sys\nfrom pathlib import Path\n"
+        probe.write_text("#!/usr/bin/env python3\nimport json,os,sys\nfrom pathlib import Path\n"
                          + f"Path({str(marker)!r}).write_text(json.dumps([sys.argv[1:], os.getcwd()]))\n")
         probe.chmod(0o755)
         terminal = base / "terminal"
-        terminal.write_text("#!/usr/bin/python3\nimport json,sys\nfrom pathlib import Path\n"
+        terminal.write_text("#!/usr/bin/env python3\nimport json,sys\nfrom pathlib import Path\n"
                             + f"Path({str(terminal_marker)!r}).write_text(json.dumps(sys.argv[1:]))\n")
         terminal.chmod(0o755)
         apps.joinpath("probe-browser.desktop").write_text(
@@ -60,7 +61,7 @@ def main():
         env.pop("DISPLAY", None)
         processes = []
         with (base / "river.log").open("w+") as river_log, (base / "launcher.log").open("w+") as launcher_log:
-            river = subprocess.Popen(["river", "-no-xwayland", "-c", str(ROOT / "target/debug/mywm")],
+            river = subprocess.Popen(["river", "-no-xwayland", "-c", str(MYWM_BINARY)],
                                      env=env, stdout=river_log, stderr=subprocess.STDOUT, start_new_session=True)
             try:
                 wait_until(lambda: any(p.is_socket() for p in runtime.glob("wayland-*")))

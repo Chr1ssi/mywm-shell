@@ -17,7 +17,6 @@
             runtimeInputs = with pkgs; [
               coreutils
               findutils
-              niri
               quickshell
               swayidle
               swaylock

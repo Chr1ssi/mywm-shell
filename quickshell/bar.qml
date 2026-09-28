@@ -13,9 +13,7 @@ ShellRoot {
     id: root
     property Theme theme: Theme {}
     property var outputs: []
-    property var niriWorkspaces: []
-    readonly property bool niriBackend: (Quickshell.env("NIRI_SOCKET") || "") !== ""
-    readonly property bool backendAvailable: socket.connected || niriBackend
+    readonly property bool backendAvailable: socket.connected
     property int workspaceCount: 9
     property bool scratchpadVisible: false
     property bool scratchpadOccupied: false
@@ -37,68 +35,9 @@ ShellRoot {
             socket.flush();
             return;
         }
-        if (!niriBackend) return;
-        const parts = command.split(" ");
-        if (parts[0] === "workspace" && parts.length === 3) {
-            niriAction.command = ["niri", "msg", "action", "focus-workspace", parts[2]];
-            niriAction.running = true;
-        } else if (parts[0] === "lock") {
-            niriAction.command = ["mywm", "--lock"];
-            niriAction.running = true;
-        } else if (parts[0] === "logout") {
-            niriAction.command = ["niri", "msg", "action", "quit", "--skip-confirmation"];
-            niriAction.running = true;
-        }
     }
     function outputFor(screen): var {
         return outputs.find(o => o.id === screen.name || (o.x === screen.x && o.y === screen.y)) || null;
-    }
-    function rebuildNiriOutputs(): void {
-        const grouped = {};
-        for (const workspace of niriWorkspaces) {
-            if (!workspace.output || !workspace.name || Number(workspace.name).toString() !== workspace.name) continue;
-            if (!grouped[workspace.output]) grouped[workspace.output] = [];
-            grouped[workspace.output].push(workspace);
-        }
-        outputs = Object.keys(grouped).map(name => {
-            const workspaces = grouped[name].sort((a, b) => Number(a.name) - Number(b.name));
-            const screen = Quickshell.screens.find(item => item.name === name);
-            let occupied = 0;
-            for (const workspace of workspaces) {
-                if (workspace.active_window_id !== null) occupied |= 1 << (Number(workspace.name) - 1);
-            }
-            const active = workspaces.find(workspace => workspace.is_active);
-            return {
-                id: name,
-                x: screen ? screen.x : 0, y: screen ? screen.y : 0,
-                width: screen ? screen.width : 0, height: screen ? screen.height : 0,
-                active: active ? Number(active.name) : 0, occupied: occupied,
-                canScrollLeft: false, canScrollRight: false,
-                workspaces: workspaces.map(workspace => Number(workspace.name))
-            };
-        });
-    }
-    function handleNiriEvent(data: string): void {
-        let event;
-        try { event = JSON.parse(data); } catch (_) { return; }
-        if (event.WorkspacesChanged) {
-            niriWorkspaces = event.WorkspacesChanged.workspaces;
-        } else if (event.WorkspaceActivated) {
-            const changed = event.WorkspaceActivated;
-            const activated = niriWorkspaces.find(workspace => workspace.id === changed.id);
-            if (!activated) return;
-            niriWorkspaces = niriWorkspaces.map(workspace => Object.assign({}, workspace, {
-                is_active: workspace.output === activated.output ? workspace.id === changed.id : workspace.is_active,
-                is_focused: changed.focused ? workspace.id === changed.id : workspace.is_focused
-            }));
-        } else if (event.WorkspaceActiveWindowChanged) {
-            const changed = event.WorkspaceActiveWindowChanged;
-            niriWorkspaces = niriWorkspaces.map(workspace => workspace.id === changed.workspace_id
-                ? Object.assign({}, workspace, {active_window_id: changed.active_window_id}) : workspace);
-        } else {
-            return;
-        }
-        rebuildNiriOutputs();
     }
     function removeNotification(notification): void {
         toastNotifications = toastNotifications.filter(item => item.id !== notification.id);
@@ -165,13 +104,6 @@ ShellRoot {
             }
         }
     }
-    Process {
-        id: niriEvents
-        running: root.niriBackend
-        command: ["niri", "msg", "--json", "event-stream"]
-        stdout: SplitParser { onRead: data => root.handleNiriEvent(data) }
-    }
-    Process { id: niriAction }
     Timer { interval: 1000; repeat: true; running: !socket.connected && socket.path !== ""; onTriggered: socket.connected = true }
 
     IpcHandler {
