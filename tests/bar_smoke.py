@@ -84,6 +84,14 @@ def main():
                 wait_for(lambda: ipc("notificationCount").stdout.strip() == "2")
                 assert ipc("dismissNotification", "0").returncode == 0
                 wait_for(lambda: ipc("notificationCount").stdout.strip() == "1")
+                # A popup that times out must stay in the list and remain dismissible.
+                subprocess.run(["notify-send", "mywm Test 3", "Popup läuft ab", "--expire-time=1000"],
+                               env=env, check=True)
+                wait_for(lambda: ipc("notificationCount").stdout.strip() == "2")
+                time.sleep(2.5)
+                assert ipc("notificationCount").stdout.strip() == "2"
+                assert ipc("dismissNotification", "0").returncode == 0
+                wait_for(lambda: ipc("notificationCount").stdout.strip() == "1")
                 if os.environ.get("MYWM_NOTIFICATION_SCREENSHOT"):
                     time.sleep(0.2)
                     subprocess.run(["grim", os.environ["MYWM_NOTIFICATION_SCREENSHOT"]], env=env, check=True)

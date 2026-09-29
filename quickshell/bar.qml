@@ -38,15 +38,19 @@ ShellRoot {
     function outputFor(screen): var {
         return outputs.find(o => o.id === screen.name || (o.x === screen.x && o.y === screen.y)) || null;
     }
+    // Quickshell destroys a notification object once it is closed, which leaves
+    // null entries in the JS arrays; drop those along with the requested one.
     function removeNotification(notification): void {
-        toastNotifications = toastNotifications.filter(item => item.id !== notification.id);
-        notifications = notifications.filter(item => item.id !== notification.id);
+        const keep = item => item && (!notification || item.id !== notification.id);
+        toastNotifications = toastNotifications.filter(keep);
+        notifications = notifications.filter(keep);
     }
     function markNotificationClosed(notification): void {
         if (!closedNotificationIds.includes(notification.id))
             closedNotificationIds = closedNotificationIds.concat([notification.id]);
     }
     function dismissNotification(notification): void {
+        if (!notification) { removeNotification(null); return; }
         const alreadyClosed = closedNotificationIds.includes(notification.id);
         removeNotification(notification);
         if (!alreadyClosed) notification.dismiss();
@@ -56,7 +60,7 @@ ShellRoot {
         notifications = [];
         toastNotifications = [];
         for (const notification of current) {
-            if (!closedNotificationIds.includes(notification.id)) notification.dismiss();
+            if (notification && !closedNotificationIds.includes(notification.id)) notification.dismiss();
         }
         closedNotificationIds = [];
     }
@@ -72,9 +76,12 @@ ShellRoot {
         onNotification: notification => {
             notification.tracked = true;
             root.closedNotificationIds = root.closedNotificationIds.filter(id => id !== notification.id);
-            notification.closed.connect(() => root.markNotificationClosed(notification));
-            root.notifications = [notification].concat(root.notifications.filter(item => item.id !== notification.id));
-            root.toastNotifications = [notification].concat(root.toastNotifications.filter(item => item.id !== notification.id)).slice(0, 4);
+            notification.closed.connect(() => {
+                root.markNotificationClosed(notification);
+                root.removeNotification(notification);
+            });
+            root.notifications = [notification].concat(root.notifications.filter(item => item && item.id !== notification.id));
+            root.toastNotifications = [notification].concat(root.toastNotifications.filter(item => item && item.id !== notification.id)).slice(0, 4);
         }
     }
     Socket {
@@ -644,7 +651,8 @@ ShellRoot {
                             interval: requested > 0 ? requested : toast.modelData.urgency === NotificationUrgency.Low ? 4000 : 7000
                             running: requested !== 0 && !toastMouse.containsMouse
                             onTriggered: {
-                                toast.modelData.expire();
+                                // Only hide the popup; expire() would destroy the
+                                // notification and break its entry in the list.
                                 root.toastNotifications = root.toastNotifications.filter(item => item !== toast.modelData);
                             }
                         }
