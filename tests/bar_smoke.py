@@ -70,9 +70,11 @@ def main():
                     return json.loads(result.stdout) if result.returncode == 0 else []
                 def mapped_status():
                     outputs = status()
-                    return outputs if len(outputs) == 3 and all(len(o["workspaces"]) == 3 for o in outputs) else None
+                    return outputs if len(outputs) == 3 and all(len(o["workspaces"]) == 1 for o in outputs) else None
                 outputs = wait_for(mapped_status)
-                assert sorted(n for o in outputs for n in o["workspaces"]) == list(range(1, 10))
+                # Every monitor has exactly one fixed workspace; extras and gaming appear dynamically.
+                assert sorted(o["workspaces"][0]["number"] for o in outputs) == [1, 2, 3]
+                assert all(o["active"] == o["workspaces"][0]["number"] for o in outputs)
                 before_active = {o["id"]: o["active"] for o in outputs}
                 subprocess.run(["notify-send", "mywm Test", "Benachrichtigungen funktionieren", "--expire-time=10000"],
                                env=env, check=True)
@@ -98,10 +100,18 @@ def main():
                 assert props["mute"] is True
                 assert ipc("volume", "0.5").returncode == 0
                 target = outputs[0]["id"]
-                selected = outputs[0]["workspaces"][1]
+                selected = outputs[0]["workspaces"][0]["number"]
                 assert ipc("workspace", target, selected).returncode == 0
                 wait_for(lambda: next(o for o in status() if o["id"] == target)["active"] == selected)
                 assert all(o["active"] == before_active[o["id"]] for o in status() if o["id"] != target)
+                # Another monitor's workspace cannot be selected here.
+                foreign = outputs[1]["workspaces"][0]["number"]
+                with socket.socket(socket.AF_UNIX) as client:
+                    client.settimeout(3)
+                    client.connect(env["MYWM_SOCKET"])
+                    client.recv(4096)
+                    client.sendall(f"v1 workspace {target} {foreign}\n".encode())
+                    assert b"v1 error" in client.recv(4096)
                 with socket.socket(socket.AF_UNIX) as client:
                     client.settimeout(3)
                     client.connect(env["MYWM_SOCKET"])
@@ -135,7 +145,7 @@ def main():
                     client.connect(env["MYWM_SOCKET"])
                     client.sendall(b"v1 logout\n")
                     river.wait(timeout=5)
-                print("Bar smoke passed: three outputs with distinct workspace groups, workspace switch, independent workspaces, invalid commands, notification dismissal, bar restart, PipeWire volume/mute, logout")
+                print("Bar smoke passed: three outputs with one fixed workspace each, workspace switch, foreign workspace rejection, invalid commands, notification dismissal, bar restart, PipeWire volume/mute, logout")
             finally:
                 if bar is not None and bar.poll() is None:
                     bar.terminate()

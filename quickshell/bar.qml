@@ -14,7 +14,6 @@ ShellRoot {
     property Theme theme: Theme {}
     property var outputs: []
     readonly property bool backendAvailable: socket.connected
-    property int workspaceCount: 9
     property bool scratchpadVisible: false
     property bool scratchpadOccupied: false
     property var notifications: []
@@ -96,10 +95,14 @@ ShellRoot {
                     return;
                 }
                 if (parts[0] !== "v1" || parts[1] !== "state") return;
-                root.workspaceCount = Number(parts[2]);
-                root.outputs = (parts[3] || "").split(";").filter(s => s.length).map(s => {
-                    const v = s.split(",").map(Number);
-                    return { id: v[0], x: v[1], y: v[2], width: v[3], height: v[4], active: v[5], occupied: v[6], canScrollLeft: v[8] === 1, canScrollRight: v[9] === 1, workspaces: Array.from({length: root.workspaceCount}, (_, i) => i + 1).filter(n => (v.length < 8 || (v[7] & (1 << (n - 1))) !== 0)) };
+                // Per output: id,x,y,width,height,active,left,right,"number:occupied|..." (number 0 is gaming).
+                root.outputs = (parts[2] || "").split(";").filter(s => s.length).map(s => {
+                    const v = s.split(",");
+                    const workspaces = (v[8] || "").split("|").filter(w => w.length).map(w => {
+                        const [number, occupied] = w.split(":");
+                        return { number: Number(number), occupied: occupied === "1" };
+                    });
+                    return { id: Number(v[0]), x: Number(v[1]), y: Number(v[2]), width: Number(v[3]), height: Number(v[4]), active: Number(v[5]), canScrollLeft: v[6] === "1", canScrollRight: v[7] === "1", workspaces: workspaces };
                 });
             }
         }
@@ -247,19 +250,18 @@ ShellRoot {
                 Repeater {
                     model: bar.output ? bar.output.workspaces : []
                     BarButton {
-                        required property int modelData
+                        required property var modelData
                         theme: root.theme
                         width: 24
-                        text: String(modelData)
+                        text: modelData.number === 0 ? "G" : String(modelData.number)
                         enabled: bar.output !== null
-                        selected: bar.output !== null && bar.output.active === modelData
-                        marked: bar.output !== null && (bar.output.occupied & (1 << (modelData - 1))) !== 0
-                        onClicked: root.send("workspace " + bar.output.id + " " + modelData)
+                        selected: bar.output !== null && bar.output.active === modelData.number
+                        marked: modelData.occupied
+                        onClicked: root.send("workspace " + bar.output.id + " " + modelData.number)
                     }
                 }
                 BarButton {
-                    visible: root.scratchpadOccupied
-                    width: visible ? 24 : 0
+                    width: 24
                     theme: root.theme
                     text: "S"
                     selected: root.scratchpadVisible
