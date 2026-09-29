@@ -28,6 +28,7 @@ ShellRoot {
     property int selected: 0
     property var entries: []
     readonly property var results: entries.filter(e => e.name.toLocaleLowerCase().includes(query.toLocaleLowerCase().trim()))
+    signal focusSearch()
     readonly property string displayedWallpaper: wallpaper || (entries.length ? entries[0].url : "")
     function openPicker(x: int, y: int): void {
         if (!scan.running) scan.running = true;
@@ -35,7 +36,7 @@ ShellRoot {
         query = "";
         selected = Math.max(0, results.findIndex(e => e.url === displayedWallpaper));
         pickerOpen = true;
-        Qt.callLater(() => search.forceActiveFocus());
+        Qt.callLater(root.focusSearch);
     }
     function move(delta: int): void {
         if (!results.length) return;
@@ -151,103 +152,111 @@ ShellRoot {
             }
         }
     }
-    PanelWindow {
-        id: picker
-        visible: root.pickerOpen
-        screen: root.pickerScreen
-        anchors { top: true; bottom: true; left: true; right: true }
-        exclusionMode: ExclusionMode.Ignore
-        WlrLayershell.layer: WlrLayer.Overlay
-        WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
-        WlrLayershell.namespace: "mywm-wallpaper-picker"
-        color: "#b3000000"
-        MouseArea { anchors.fill: parent; onClicked: root.pickerOpen = false }
-        Column {
-            anchors.centerIn: parent
-            width: parent.width - 48
-            spacing: 22
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "WALLPAPER"
-                color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 14; font.bold: true
+    LazyLoader {
+        active: root.pickerOpen
+        PanelWindow {
+            id: picker
+            visible: root.pickerOpen
+            screen: root.pickerScreen
+            anchors { top: true; bottom: true; left: true; right: true }
+            exclusionMode: ExclusionMode.Ignore
+            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+            WlrLayershell.namespace: "mywm-wallpaper-picker"
+            color: "#b3000000"
+            Component.onCompleted: Qt.callLater(() => search.forceActiveFocus())
+            Connections {
+                target: root
+                function onFocusSearch(): void { search.forceActiveFocus(); }
             }
-            Item {
-                id: carousel
-                width: parent.width
-                height: Math.min(475, picker.height * 0.58)
-                readonly property real expandedWidth: Math.min(768, width * 0.64)
-                readonly property real step: Math.min(78, width * 0.07)
-                clip: true
-                Repeater {
-                    model: root.results
-                    Item {
-                        id: tile
-                        required property var modelData
-                        required property int index
-                        readonly property int distance: index - root.selected
-                        readonly property bool selected: distance === 0
-                        visible: Math.abs(distance) <= 6
-                        z: selected ? 10 : 6 - Math.abs(distance)
-                        x: (carousel.width - carousel.expandedWidth) / 2 + (distance < 0 ? distance * carousel.step : distance > 0 ? carousel.expandedWidth + (distance - 1) * carousel.step : 0)
-                        y: selected ? 0 : 20
-                        width: selected ? carousel.expandedWidth : carousel.step + 24
-                        height: carousel.height - (selected ? 0 : 40)
-                        transform: Matrix4x4 { matrix: Qt.matrix4x4(1, -0.06, 0, 14, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1) }
-                        Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                        Behavior on width { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                        Rectangle {
-                            anchors.fill: parent; color: root.theme.surfaceColor
-                            clip: true
-                            Image {
-                                anchors.fill: parent; anchors.margins: tile.selected ? 3 : 1
-                                source: tile.visible ? tile.modelData.url : ""
-                                sourceSize.width: 1000; sourceSize.height: 600
-                                fillMode: Image.PreserveAspectCrop; asynchronous: true
+            MouseArea { anchors.fill: parent; onClicked: root.pickerOpen = false }
+            Column {
+                anchors.centerIn: parent
+                width: parent.width - 48
+                spacing: 22
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: "WALLPAPER"
+                    color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 14; font.bold: true
+                }
+                Item {
+                    id: carousel
+                    width: parent.width
+                    height: Math.min(475, picker.height * 0.58)
+                    readonly property real expandedWidth: Math.min(768, width * 0.64)
+                    readonly property real step: Math.min(78, width * 0.07)
+                    clip: true
+                    Repeater {
+                        model: root.results
+                        Item {
+                            id: tile
+                            required property var modelData
+                            required property int index
+                            readonly property int distance: index - root.selected
+                            readonly property bool selected: distance === 0
+                            visible: Math.abs(distance) <= 6
+                            z: selected ? 10 : 6 - Math.abs(distance)
+                            x: (carousel.width - carousel.expandedWidth) / 2 + (distance < 0 ? distance * carousel.step : distance > 0 ? carousel.expandedWidth + (distance - 1) * carousel.step : 0)
+                            y: selected ? 0 : 20
+                            width: selected ? carousel.expandedWidth : carousel.step + 24
+                            height: carousel.height - (selected ? 0 : 40)
+                            transform: Matrix4x4 { matrix: Qt.matrix4x4(1, -0.06, 0, 14, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1) }
+                            Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                            Behavior on width { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                            Rectangle {
+                                anchors.fill: parent; color: root.theme.surfaceColor
+                                clip: true
+                                Image {
+                                    anchors.fill: parent; anchors.margins: tile.selected ? 3 : 1
+                                    source: tile.visible ? tile.modelData.url : ""
+                                    sourceSize.width: 1000; sourceSize.height: 600
+                                    fillMode: Image.PreserveAspectCrop; asynchronous: true
+                                }
+                                Rectangle { anchors.fill: parent; color: "#66000000"; visible: !tile.selected }
+                                Rectangle { anchors.fill: parent; color: "transparent"; border.width: tile.selected ? 3 : 1; border.color: tile.selected ? root.theme.accentColor : root.theme.borderColor }
                             }
-                            Rectangle { anchors.fill: parent; color: "#66000000"; visible: !tile.selected }
-                            Rectangle { anchors.fill: parent; color: "transparent"; border.width: tile.selected ? 3 : 1; border.color: tile.selected ? root.theme.accentColor : root.theme.borderColor }
+                            MouseArea {
+                                anchors.fill: parent; enabled: !root.saving; cursorShape: Qt.PointingHandCursor
+                                onClicked: { if (tile.selected) root.choose(tile.index); else root.selected = tile.index; }
+                                onWheel: event => root.move(event.angleDelta.y < 0 ? 1 : -1)
+                            }
                         }
-                        MouseArea {
-                            anchors.fill: parent; enabled: !root.saving; cursorShape: Qt.PointingHandCursor
-                            onClicked: { if (tile.selected) root.choose(tile.index); else root.selected = tile.index; }
-                            onWheel: event => root.move(event.angleDelta.y < 0 ? 1 : -1)
-                        }
+                    }
+                    Text {
+                        anchors.centerIn: parent; visible: !root.results.length
+                        text: scan.running ? "Bilder werden geladen …" : "Keine passenden Bilder gefunden"
+                        color: root.theme.textColor; font.family: root.theme.fontFamily
                     }
                 }
                 Text {
-                    anchors.centerIn: parent; visible: !root.results.length
-                    text: scan.running ? "Bilder werden geladen …" : "Keine passenden Bilder gefunden"
-                    color: root.theme.textColor; font.family: root.theme.fontFamily
+                    width: parent.width; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideMiddle
+                    text: root.results.length ? root.results[root.selected].name : ""
+                    color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 20
                 }
-            }
-            Text {
-                width: parent.width; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideMiddle
-                text: root.results.length ? root.results[root.selected].name : ""
-                color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 20
-            }
-            TextField {
-                id: search
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: Math.min(420, parent.width); height: 40
-                font.family: root.theme.fontFamily; font.pixelSize: 13
-                text: root.query; onTextChanged: root.query = text
-                placeholderText: "Bilder filtern …"
-                color: root.theme.textColor; placeholderTextColor: root.theme.mutedColor
-                selectionColor: root.theme.accentColor; selectedTextColor: root.theme.backgroundColor
-                background: Rectangle { color: root.theme.backgroundColor; border.color: root.theme.borderColor }
-                Keys.onPressed: event => {
-                    if (event.key === Qt.Key_Escape) root.pickerOpen = false;
-                    else if (event.key === Qt.Key_Right || event.key === Qt.Key_Down || event.key === Qt.Key_Tab) root.move(1);
-                    else if (event.key === Qt.Key_Left || event.key === Qt.Key_Up || event.key === Qt.Key_Backtab) root.move(-1);
-                    else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) root.choose(root.selected);
-                    else return;
-                    event.accepted = true;
+                TextField {
+                    id: search
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: Math.min(420, parent.width); height: 40
+                    font.family: root.theme.fontFamily; font.pixelSize: 13
+                    text: root.query; onTextChanged: root.query = text
+                    placeholderText: "Bilder filtern …"
+                    color: root.theme.textColor; placeholderTextColor: root.theme.mutedColor
+                    selectionColor: root.theme.accentColor; selectedTextColor: root.theme.backgroundColor
+                    background: Rectangle { color: root.theme.backgroundColor; border.color: root.theme.borderColor }
+                    Keys.onPressed: event => {
+                        if (event.key === Qt.Key_Escape) root.pickerOpen = false;
+                        else if (event.key === Qt.Key_Right || event.key === Qt.Key_Down || event.key === Qt.Key_Tab) root.move(1);
+                        else if (event.key === Qt.Key_Left || event.key === Qt.Key_Up || event.key === Qt.Key_Backtab) root.move(-1);
+                        else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) root.choose(root.selected);
+                        else return;
+                        event.accepted = true;
+                    }
                 }
-            }
-            Text {
-                width: parent.width; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
-                text: root.errorText || (root.saving ? "Wird gespeichert …" : (root.results.length ? root.selected + 1 : 0) + " / " + root.results.length + "  ·  ← → Auswahl  ·  ↵ Anwenden  ·  Esc")
-                color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 12
+                Text {
+                    width: parent.width; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
+                    text: root.errorText || (root.saving ? "Wird gespeichert …" : (root.results.length ? root.selected + 1 : 0) + " / " + root.results.length + "  ·  ← → Auswahl  ·  ↵ Anwenden  ·  Esc")
+                    color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 12
+                }
             }
         }
     }
