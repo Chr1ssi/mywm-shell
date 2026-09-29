@@ -263,6 +263,13 @@ ShellRoot {
                 BarButton {
                     width: 24
                     theme: root.theme
+                    text: "+"
+                    enabled: bar.output !== null
+                    onClicked: root.send("new-workspace " + bar.output.id)
+                }
+                BarButton {
+                    width: 24
+                    theme: root.theme
                     text: "S"
                     selected: root.scratchpadVisible
                     marked: root.scratchpadOccupied

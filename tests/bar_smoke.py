@@ -104,6 +104,14 @@ def main():
                 assert ipc("workspace", target, selected).returncode == 0
                 wait_for(lambda: next(o for o in status() if o["id"] == target)["active"] == selected)
                 assert all(o["active"] == before_active[o["id"]] for o in status() if o["id"] != target)
+                # The "+" button's command adds an extra workspace on that monitor only.
+                with socket.socket(socket.AF_UNIX) as client:
+                    client.connect(env["MYWM_SOCKET"])
+                    client.sendall(f"v1 new-workspace {target}\n".encode())
+                    wait_for(lambda: len(next(o for o in status() if o["id"] == target)["workspaces"]) == 2)
+                assert all(len(o["workspaces"]) == 1 for o in status() if o["id"] != target)
+                assert ipc("workspace", target, selected).returncode == 0
+                wait_for(lambda: len(next(o for o in status() if o["id"] == target)["workspaces"]) == 1)
                 # Another monitor's workspace cannot be selected here.
                 foreign = outputs[1]["workspaces"][0]["number"]
                 with socket.socket(socket.AF_UNIX) as client:
