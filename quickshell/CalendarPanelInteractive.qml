@@ -108,7 +108,7 @@ Column {
             width: parent.width - 96; anchors.verticalCenter: parent.verticalCenter
             horizontalAlignment: Text.AlignHCenter
             text: panel.shownMonth.toLocaleString(Qt.locale("de_DE"), "MMMM yyyy")
-            color: panel.theme.textColor; font.family: panel.theme.fontFamily; font.pixelSize: 16
+            color: panel.theme.textColor; font.family: panel.theme.fontFamily; font.pixelSize: 18
         }
         BarButton { theme: panel.theme; text: "›"; onClicked: panel.shiftMonth(1) }
     }
@@ -121,7 +121,7 @@ Column {
                 required property string modelData
                 width: (panel.width - 18) / 7; height: 22
                 text: modelData; horizontalAlignment: Text.AlignHCenter
-                color: panel.theme.mutedColor; font.family: panel.theme.fontFamily; font.pixelSize: 11
+                color: panel.theme.mutedColor; font.family: panel.theme.fontFamily; font.pixelSize: 13
             }
         }
         Repeater {
@@ -139,7 +139,7 @@ Column {
                     anchors.horizontalCenter: parent.horizontalCenter; y: 3
                     text: dayCell.valid ? dayCell.day : ""
                     color: panel.isSelected(dayCell.day) ? panel.theme.backgroundColor : panel.theme.textColor
-                    font.family: panel.theme.fontFamily; font.pixelSize: 12
+                    font.family: panel.theme.fontFamily; font.pixelSize: 14
                 }
                 Row {
                     anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom; anchors.bottomMargin: 3
@@ -168,7 +168,7 @@ Column {
         Text {
             width: parent.width - 104
             text: "Termine am " + panel.selectedDate.toLocaleString(Qt.locale("de_DE"), "dd. MMMM")
-            color: panel.theme.textColor; font.family: panel.theme.fontFamily; font.pixelSize: 14
+            color: panel.theme.textColor; font.family: panel.theme.fontFamily; font.pixelSize: 16
         }
         BarButton { theme: panel.theme; text: "+"; selected: panel.createOpen; onClicked: panel.createOpen = !panel.createOpen }
         BarButton { theme: panel.theme; text: "󰑐"; onClicked: panel.reload() }
@@ -194,14 +194,14 @@ Column {
     Text {
         visible: panel.errorText !== ""; width: parent.width
         text: panel.errorText; wrapMode: Text.WordWrap
-        color: panel.theme.mutedColor; font.family: panel.theme.fontFamily; font.pixelSize: 12
+        color: panel.theme.mutedColor; font.family: panel.theme.fontFamily; font.pixelSize: 14
     }
     Repeater {
         model: panel.selectedEvents()
         Rectangle {
             required property var modelData
-            width: panel.width; height: eventColumn.implicitHeight + 14; radius: 10
-            color: panel.theme.surfaceColor
+            width: panel.width; height: eventColumn.implicitHeight + 14; radius: 12
+            color: panel.theme.glassSurfaceColor
             Row {
                 anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; margins: 10 }
                 spacing: 9
@@ -214,7 +214,7 @@ Column {
                     id: eventColumn; width: parent.width - 13; spacing: 2
                     Text {
                         width: parent.width; text: modelData.title || "(Ohne Titel)"; elide: Text.ElideRight
-                        color: panel.theme.textColor; font.family: panel.theme.fontFamily; font.pixelSize: 13
+                        color: panel.theme.textColor; font.family: panel.theme.fontFamily; font.pixelSize: 15
                     }
                     Text {
                         width: parent.width
@@ -222,7 +222,7 @@ Column {
                             + "  ·  " + modelData.calendar
                             + (modelData.location ? "  ·  " + modelData.location : "")
                         elide: Text.ElideRight; color: panel.theme.mutedColor
-                        font.family: panel.theme.fontFamily; font.pixelSize: 11
+                        font.family: panel.theme.fontFamily; font.pixelSize: 13
                     }
                 }
             }
@@ -231,20 +231,20 @@ Column {
     Text {
         visible: panel.errorText === "" && panel.selectedEvents().length === 0; width: parent.width
         text: "Keine Termine an diesem Tag."; color: panel.theme.mutedColor
-        font.family: panel.theme.fontFamily; font.pixelSize: 12
+        font.family: panel.theme.fontFamily; font.pixelSize: 14
     }
     Rectangle { width: parent.width; height: 1; color: panel.theme.borderColor }
     Text {
         width: parent.width; text: "Nächste Termine"
         color: panel.theme.textColor
-        font.family: panel.theme.fontFamily; font.pixelSize: 14
+        font.family: panel.theme.fontFamily; font.pixelSize: 16
     }
     Repeater {
         model: panel.upcomingEvents()
         Rectangle {
             required property var modelData
-            width: panel.width; height: upcomingColumn.implicitHeight + 14; radius: 10
-            color: panel.theme.surfaceColor
+            width: panel.width; height: upcomingColumn.implicitHeight + 14; radius: 12
+            color: panel.theme.glassSurfaceColor
             Row {
                 anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; margins: 10 }
                 spacing: 9
@@ -257,7 +257,7 @@ Column {
                     id: upcomingColumn; width: parent.width - 13; spacing: 2
                     Text {
                         width: parent.width; text: modelData.title || "(Ohne Titel)"; elide: Text.ElideRight
-                        color: panel.theme.textColor; font.family: panel.theme.fontFamily; font.pixelSize: 13
+                        color: panel.theme.textColor; font.family: panel.theme.fontFamily; font.pixelSize: 15
                     }
                     Text {
                         width: parent.width
@@ -265,7 +265,7 @@ Column {
                             + (modelData.allDay ? "Ganztägig" : modelData.startTime + "–" + modelData.endTime)
                             + "  ·  " + modelData.calendar
                         elide: Text.ElideRight; color: panel.theme.mutedColor
-                        font.family: panel.theme.fontFamily; font.pixelSize: 11
+                        font.family: panel.theme.fontFamily; font.pixelSize: 13
                     }
                 }
             }
@@ -274,7 +274,7 @@ Column {
     Text {
         visible: panel.errorText === "" && panel.upcomingEvents().length === 0; width: parent.width
         text: "Keine anstehenden Termine im geladenen Zeitraum."; color: panel.theme.mutedColor
-        font.family: panel.theme.fontFamily; font.pixelSize: 12
+        font.family: panel.theme.fontFamily; font.pixelSize: 14
     }
     BarButton {
         width: panel.width; theme: panel.theme; text: "Kalender-App öffnen"

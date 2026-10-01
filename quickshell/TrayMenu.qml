@@ -64,7 +64,7 @@ Column {
             anchors.verticalCenter: parent.verticalCenter
             text: menuView.title
             color: menuView.theme.textColor
-            font.family: menuView.theme.fontFamily; font.pixelSize: 13; font.bold: true
+            font.family: menuView.theme.fontFamily; font.pixelSize: 15; font.bold: true
             elide: Text.ElideRight
         }
     }
@@ -93,7 +93,7 @@ Column {
             Rectangle {
                 visible: !entry.modelData.isSeparator
                 anchors.fill: parent
-                radius: 8
+                radius: 12
                 color: entryMouse.containsMouse ? menuView.theme.surfaceColor : "transparent"
                 opacity: entry.modelData.enabled ? 1 : 0.45
 
@@ -107,7 +107,7 @@ Column {
                         horizontalAlignment: Text.AlignHCenter
                         text: entry.modelData.buttonType === QsMenuButtonType.None ? "" : entry.modelData.checkState === Qt.Checked ? "✓" : "○"
                         color: menuView.theme.accentColor
-                        font.family: menuView.theme.fontFamily; font.pixelSize: 12
+                        font.family: menuView.theme.fontFamily; font.pixelSize: 14
                     }
                     Item {
                         id: entryIcon
@@ -129,7 +129,7 @@ Column {
                             visible: entryIcon.glyph !== ""
                             text: entryIcon.glyph
                             color: menuView.theme.textColor
-                            font.family: menuView.theme.fontFamily; font.pixelSize: 13
+                            font.family: menuView.theme.fontFamily; font.pixelSize: 15
                         }
                     }
                     Text {
@@ -137,7 +137,7 @@ Column {
                         anchors.verticalCenter: parent.verticalCenter
                         text: entry.modelData.text
                         color: menuView.theme.textColor
-                        font.family: menuView.theme.fontFamily; font.pixelSize: 12
+                        font.family: menuView.theme.fontFamily; font.pixelSize: 14
                         elide: Text.ElideRight
                     }
                     Text {
@@ -145,7 +145,7 @@ Column {
                         anchors.verticalCenter: parent.verticalCenter
                         text: entry.modelData.hasChildren ? "›" : ""
                         color: menuView.theme.mutedColor
-                        font.family: menuView.theme.fontFamily; font.pixelSize: 16
+                        font.family: menuView.theme.fontFamily; font.pixelSize: 18
                     }
                 }
 

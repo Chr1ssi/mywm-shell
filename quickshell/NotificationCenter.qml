@@ -21,7 +21,7 @@ Column {
             width: parent.width - clearButton.width - 8
             text: center.notifications.length + (center.notifications.length === 1 ? " Benachrichtigung" : " Benachrichtigungen")
             color: center.theme.textColor
-            font.family: center.theme.fontFamily; font.pixelSize: 13
+            font.family: center.theme.fontFamily; font.pixelSize: 15
         }
         BarButton {
             id: clearButton
@@ -51,7 +51,7 @@ Column {
             visible: center.notifications.length === 0
             text: "Keine Benachrichtigungen"
             color: center.theme.mutedColor
-            font.family: center.theme.fontFamily; font.pixelSize: 12
+            font.family: center.theme.fontFamily; font.pixelSize: 14
         }
     }
 }

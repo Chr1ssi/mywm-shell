@@ -68,7 +68,7 @@ Column {
             horizontalAlignment: Text.AlignHCenter
             text: panel.shownMonth.toLocaleString(Qt.locale("de_DE"), "MMMM yyyy")
             color: panel.theme.textColor
-            font.family: panel.theme.fontFamily; font.pixelSize: 16
+            font.family: panel.theme.fontFamily; font.pixelSize: 18
         }
         BarButton { theme: panel.theme; text: "›"; onClicked: panel.shiftMonth(1) }
     }
@@ -85,7 +85,7 @@ Column {
                 width: (panel.width - 18) / 7; height: 22
                 text: modelData; horizontalAlignment: Text.AlignHCenter
                 color: panel.theme.mutedColor
-                font.family: panel.theme.fontFamily; font.pixelSize: 11
+                font.family: panel.theme.fontFamily; font.pixelSize: 13
             }
         }
         Repeater {
@@ -99,7 +99,7 @@ Column {
                     anchors.centerIn: parent
                     text: parent.day > 0 && panel.validDay(parent.day) ? parent.day : ""
                     color: panel.isToday(parent.day) ? panel.theme.backgroundColor : panel.theme.textColor
-                    font.family: panel.theme.fontFamily; font.pixelSize: 12
+                    font.family: panel.theme.fontFamily; font.pixelSize: 14
                 }
             }
         }
@@ -111,7 +111,7 @@ Column {
         Text {
             width: parent.width - 48; text: "Nächste Termine"
             color: panel.theme.textColor
-            font.family: panel.theme.fontFamily; font.pixelSize: 14
+            font.family: panel.theme.fontFamily; font.pixelSize: 16
         }
         BarButton { theme: panel.theme; text: "󰑐"; onClicked: panel.reload() }
     }
@@ -119,14 +119,14 @@ Column {
         visible: panel.errorText !== ""; width: parent.width
         text: panel.errorText; wrapMode: Text.WordWrap
         color: panel.theme.mutedColor
-        font.family: panel.theme.fontFamily; font.pixelSize: 12
+        font.family: panel.theme.fontFamily; font.pixelSize: 14
     }
     Repeater {
         model: panel.events.slice(0, 8)
         Rectangle {
             required property var modelData
-            width: panel.width; height: eventColumn.implicitHeight + 14; radius: 10
-            color: panel.theme.surfaceColor
+            width: panel.width; height: eventColumn.implicitHeight + 14; radius: 12
+            color: panel.theme.glassSurfaceColor
             Row {
                 anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; margins: 10 }
                 spacing: 9
@@ -142,7 +142,7 @@ Column {
                     Text {
                         width: parent.width; text: modelData.title || "(Ohne Titel)"; elide: Text.ElideRight
                         color: panel.theme.textColor
-                        font.family: panel.theme.fontFamily; font.pixelSize: 13
+                        font.family: panel.theme.fontFamily; font.pixelSize: 15
                     }
                     Text {
                         width: parent.width
@@ -150,7 +150,7 @@ Column {
                             + "  ·  " + modelData.calendar
                             + (modelData.location ? "  ·  " + modelData.location : "")
                         elide: Text.ElideRight; color: panel.theme.mutedColor
-                        font.family: panel.theme.fontFamily; font.pixelSize: 11
+                        font.family: panel.theme.fontFamily; font.pixelSize: 13
                     }
                 }
             }
@@ -159,7 +159,7 @@ Column {
     Text {
         visible: panel.errorText === "" && panel.events.length === 0; width: parent.width
         text: "Keine Termine in den nächsten 31 Tagen."; color: panel.theme.mutedColor
-        font.family: panel.theme.fontFamily; font.pixelSize: 12
+        font.family: panel.theme.fontFamily; font.pixelSize: 14
     }
     BarButton {
         width: panel.width; theme: panel.theme; text: "Kalender-App öffnen"

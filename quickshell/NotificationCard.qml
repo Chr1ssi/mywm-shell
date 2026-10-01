@@ -13,10 +13,11 @@ Rectangle {
     signal closeRequested()
 
     implicitHeight: content.implicitHeight + 24
-    radius: 16
-    color: theme.backgroundColor
+    radius: 18
+    // Toasts float on their own; in the notification center the card sits on a glass panel.
+    color: compact ? theme.glassColor : theme.glassSurfaceColor
     border.width: notification.urgency === NotificationUrgency.Critical ? 2 : 1
-    border.color: notification.urgency === NotificationUrgency.Critical ? theme.accentColor : theme.borderColor
+    border.color: notification.urgency === NotificationUrgency.Critical ? theme.accentColor : theme.glassBorderColor
 
     Row {
         id: content
@@ -43,7 +44,7 @@ Rectangle {
                     width: parent.width - closeButton.width - 8
                     text: card.notification.summary || card.notification.appName || "Benachrichtigung"
                     color: card.theme.textColor
-                    font.family: card.theme.fontFamily; font.pixelSize: 13; font.bold: true
+                    font.family: card.theme.fontFamily; font.pixelSize: 15; font.bold: true
                     elide: Text.ElideRight
                 }
                 BarButton {
@@ -61,13 +62,13 @@ Rectangle {
                 maximumLineCount: card.compact ? 3 : 8
                 elide: Text.ElideRight
                 color: card.theme.textColor
-                font.family: card.theme.fontFamily; font.pixelSize: 12
+                font.family: card.theme.fontFamily; font.pixelSize: 14
             }
             Text {
                 visible: text !== ""
                 text: card.notification.appName || ""
                 color: card.theme.mutedColor
-                font.family: card.theme.fontFamily; font.pixelSize: 10
+                font.family: card.theme.fontFamily; font.pixelSize: 12
             }
             Flow {
                 width: parent.width

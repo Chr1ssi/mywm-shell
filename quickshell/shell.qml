@@ -96,10 +96,10 @@ ShellRoot {
 
         Rectangle {
             anchors.fill: parent
-            radius: 0
-            color: root.theme.backgroundColor
-            border.width: 2
-            border.color: root.theme.accentColor
+            radius: root.theme.panelRadius
+            color: root.theme.glassColor
+            border.width: 1
+            border.color: root.theme.glassBorderColor
 
             Column {
                 anchors.fill: parent
@@ -109,7 +109,7 @@ ShellRoot {
                 Text {
                     text: "ANWENDUNGEN"
                     color: root.theme.textColor
-                    font.family: root.theme.fontFamily; font.pixelSize: 12
+                    font.family: root.theme.fontFamily; font.pixelSize: 14
                     font.bold: true
                 }
 
@@ -117,6 +117,7 @@ ShellRoot {
                     id: search
                     width: parent.width
                     height: 48
+                    leftPadding: 20; rightPadding: 20
                     text: root.query
                     onTextChanged: root.query = text
                     placeholderText: "App suchen …"
@@ -124,11 +125,11 @@ ShellRoot {
                     placeholderTextColor: root.theme.mutedColor
                     selectionColor: root.theme.accentColor
                     selectedTextColor: root.theme.backgroundColor
-                    font.family: root.theme.fontFamily; font.pixelSize: 16
+                    font.family: root.theme.fontFamily; font.pixelSize: 18
                     focus: true
                     background: Rectangle {
-                        color: root.theme.surfaceColor
-                        radius: 0
+                        color: root.theme.glassSurfaceColor
+                        radius: height / 2
                         border.color: root.theme.borderColor
                     }
                     Component.onCompleted: Qt.callLater(() => search.forceActiveFocus())
@@ -157,7 +158,7 @@ ShellRoot {
                         required property int index
                         width: list.width
                         height: 52
-                        radius: 0
+                        radius: 14
                         color: index === root.selected || rowMouse.containsMouse ? root.theme.surfaceColor : "transparent"
                         border.width: 0
                         border.color: root.theme.accentColor
@@ -181,14 +182,14 @@ ShellRoot {
                                 text: row.modelData.name
                                 elide: Text.ElideRight
                                 color: root.theme.textColor
-                                font.family: root.theme.fontFamily; font.pixelSize: 14
+                                font.family: root.theme.fontFamily; font.pixelSize: 16
                             }
                             Text {
                                 width: parent.width
                                 text: row.modelData.genericName || row.modelData.comment || row.modelData.id
                                 elide: Text.ElideRight
                                 color: root.theme.mutedColor
-                                font.family: root.theme.fontFamily; font.pixelSize: 12
+                                font.family: root.theme.fontFamily; font.pixelSize: 14
                             }
                         }
                         MouseArea {
@@ -203,7 +204,7 @@ ShellRoot {
                         visible: root.results.length === 0
                         text: "Keine passenden Anwendungen"
                         color: root.theme.mutedColor
-                        font.family: root.theme.fontFamily; font.pixelSize: 16
+                        font.family: root.theme.fontFamily; font.pixelSize: 18
                     }
                 }
 
@@ -212,7 +213,7 @@ ShellRoot {
                     elide: Text.ElideRight
                     text: root.results.length + " Apps  ·  ↑↓ Auswahl  ·  ↵ Start  ·  Esc"
                     color: root.theme.mutedColor
-                    font.family: root.theme.fontFamily; font.pixelSize: 12
+                    font.family: root.theme.fontFamily; font.pixelSize: 14
                 }
             }
         }

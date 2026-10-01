@@ -13,8 +13,8 @@ Rectangle {
     Keys.onReturnPressed: clicked()
     Keys.onSpacePressed: clicked()
     implicitWidth: label.implicitWidth + 16
-    implicitHeight: 24
-    radius: 0
+    implicitHeight: 26
+    radius: height / 2
     color: selected || mouse.containsMouse || activeFocus ? theme.surfaceColor : "transparent"
     opacity: enabled ? 1 : 0.45
     Text {
@@ -25,12 +25,12 @@ Rectangle {
         elide: Text.ElideRight
         text: button.text
         color: button.selected ? button.theme.accentColor : button.theme.textColor
-        font.family: button.theme.fontFamily; font.pixelSize: 12
+        font.family: button.theme.fontFamily; font.pixelSize: 14
         font.bold: button.marked || button.selected
     }
     Rectangle {
         visible: button.marked && !button.selected
-        anchors.bottom: parent.bottom
+        anchors.bottom: parent.bottom; anchors.bottomMargin: 2
         anchors.horizontalCenter: parent.horizontalCenter
         width: 4; height: 3; radius: 1
         color: button.theme.accentColor

@@ -45,13 +45,13 @@ Column {
         Text {
             text: "Ausgabe"
             color: panel.theme.accentColor
-            font.family: panel.theme.fontFamily; font.pixelSize: 13
+            font.family: panel.theme.fontFamily; font.pixelSize: 15
         }
         Text {
             visible: panel.currentOutput === null
             text: "Kein Ausgabegerät"
             color: panel.theme.mutedColor
-            font.family: panel.theme.fontFamily; font.pixelSize: 12
+            font.family: panel.theme.fontFamily; font.pixelSize: 14
         }
         Loader {
             active: panel.currentOutput !== null
@@ -97,13 +97,13 @@ Column {
         Text {
             text: "Mikrofon"
             color: panel.theme.accentColor
-            font.family: panel.theme.fontFamily; font.pixelSize: 13
+            font.family: panel.theme.fontFamily; font.pixelSize: 15
         }
         Text {
             visible: panel.currentInput === null
             text: "Kein Eingabegerät"
             color: panel.theme.mutedColor
-            font.family: panel.theme.fontFamily; font.pixelSize: 12
+            font.family: panel.theme.fontFamily; font.pixelSize: 14
         }
         Loader {
             active: panel.currentInput !== null
@@ -149,13 +149,13 @@ Column {
         Text {
             text: "Anwendungen"
             color: panel.theme.accentColor
-            font.family: panel.theme.fontFamily; font.pixelSize: 13
+            font.family: panel.theme.fontFamily; font.pixelSize: 15
         }
         Text {
             visible: panel.applications.length === 0
             text: "Keine aktiven Anwendungen"
             color: panel.theme.mutedColor
-            font.family: panel.theme.fontFamily; font.pixelSize: 12
+            font.family: panel.theme.fontFamily; font.pixelSize: 14
         }
         Repeater {
             model: panel.applications

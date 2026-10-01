@@ -177,7 +177,7 @@ ShellRoot {
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: "WALLPAPER"
-                    color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 14; font.bold: true
+                    color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 16; font.bold: true
                 }
                 Item {
                     id: carousel
@@ -231,18 +231,19 @@ ShellRoot {
                 Text {
                     width: parent.width; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideMiddle
                     text: root.results.length ? root.results[root.selected].name : ""
-                    color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 20
+                    color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 22
                 }
                 TextField {
                     id: search
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: Math.min(420, parent.width); height: 40
-                    font.family: root.theme.fontFamily; font.pixelSize: 13
+                    leftPadding: 16; rightPadding: 16
+                    font.family: root.theme.fontFamily; font.pixelSize: 15
                     text: root.query; onTextChanged: root.query = text
                     placeholderText: "Bilder filtern …"
                     color: root.theme.textColor; placeholderTextColor: root.theme.mutedColor
                     selectionColor: root.theme.accentColor; selectedTextColor: root.theme.backgroundColor
-                    background: Rectangle { color: root.theme.backgroundColor; border.color: root.theme.borderColor }
+                    background: Rectangle { radius: height / 2; color: root.theme.glassColor; border.color: root.theme.glassBorderColor }
                     Keys.onPressed: event => {
                         if (event.key === Qt.Key_Escape) root.pickerOpen = false;
                         else if (event.key === Qt.Key_Right || event.key === Qt.Key_Down || event.key === Qt.Key_Tab) root.move(1);
@@ -255,7 +256,7 @@ ShellRoot {
                 Text {
                     width: parent.width; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
                     text: root.errorText || (root.saving ? "Wird gespeichert …" : (root.results.length ? root.selected + 1 : 0) + " / " + root.results.length + "  ·  ← → Auswahl  ·  ↵ Anwenden  ·  Esc")
-                    color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 12
+                    color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 14
                 }
             }
         }

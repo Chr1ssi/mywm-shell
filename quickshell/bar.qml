@@ -222,10 +222,11 @@ ShellRoot {
             anchors { top: true; left: true; right: true }
             implicitHeight: root.theme.barHeight
             exclusiveZone: root.theme.barHeight
-            color: root.theme.backgroundColor
+            color: "transparent"
             WlrLayershell.layer: WlrLayer.Top
             WlrLayershell.namespace: "mywm-bar"
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+            readonly property bool hasTrayItems: SystemTray.items.values.some(item => item.status !== Status.Passive)
 
             PanelWindow {
                 visible: bar.output !== null && bar.output.canScrollLeft
@@ -250,16 +251,15 @@ ShellRoot {
                 WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
             }
 
-            Row {
-                anchors.left: parent.left; anchors.leftMargin: 8
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 3
+            BarIsland {
+                theme: root.theme
+                x: 8; y: root.theme.barMargin
                 Repeater {
                     model: bar.output ? bar.output.workspaces : []
                     BarButton {
                         required property var modelData
                         theme: root.theme
-                        width: 24
+                        width: 26
                         text: modelData.number === 0 ? "G" : String(modelData.number)
                         enabled: bar.output !== null
                         selected: bar.output !== null && bar.output.active === modelData.number
@@ -268,25 +268,26 @@ ShellRoot {
                     }
                 }
                 BarButton {
-                    width: 24
+                    width: 26
                     theme: root.theme
                     text: "+"
                     enabled: bar.output !== null
                     onClicked: root.send("new-workspace " + bar.output.id)
                 }
                 BarButton {
-                    width: 24
+                    width: 26
                     theme: root.theme
                     text: "S"
+                    visible: root.scratchpadOccupied
                     selected: root.scratchpadVisible
                     marked: root.scratchpadOccupied
                     onClicked: root.send("scratchpad")
                 }
             }
-            Row {
-                anchors.centerIn: parent
-                spacing: 8
-
+            BarIsland {
+                theme: root.theme
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: root.theme.barMargin
                 BarButton {
                     visible: bar.activePlayer !== null
                     width: visible ? Math.min(260, bar.width * 0.24) : 0
@@ -304,54 +305,62 @@ ShellRoot {
             }
             Row {
                 anchors.right: parent.right; anchors.rightMargin: 8
-                anchors.verticalCenter: parent.verticalCenter
+                y: root.theme.barMargin
                 spacing: 8
-                Repeater {
-                    model: SystemTray.items
-                    Rectangle {
-                        id: trayIcon
-                        required property var modelData
-                        width: visible ? 24 : 0; height: 24; radius: 6
-                        visible: modelData.status !== Status.Passive
-                        color: trayMouse.containsMouse ? root.theme.surfaceColor : "transparent"
-                        border.width: modelData.status === Status.NeedsAttention ? 1 : 0
-                        border.color: root.theme.accentColor
-                        Image { anchors.centerIn: parent; width: 18; height: 18; source: trayIcon.modelData.icon }
-                        MouseArea {
-                            id: trayMouse
-                            anchors.fill: parent; hoverEnabled: true
-                            acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
-                            onClicked: event => {
-                                if (event.button === Qt.MiddleButton) trayIcon.modelData.secondaryActivate();
-                                else if (event.button === Qt.RightButton || trayIcon.modelData.onlyMenu) {
-                                    bar.openTrayMenu(trayIcon.modelData);
-                                } else trayIcon.modelData.activate();
+                // Tray icons belong to other applications; the shell's own status sits apart.
+                BarIsland {
+                    theme: root.theme
+                    visible: bar.hasTrayItems
+                    Repeater {
+                        model: SystemTray.items
+                        Rectangle {
+                            id: trayIcon
+                            required property var modelData
+                            width: visible ? 26 : 0; height: 26; radius: 13
+                            visible: modelData.status !== Status.Passive
+                            color: trayMouse.containsMouse ? root.theme.surfaceColor : "transparent"
+                            border.width: modelData.status === Status.NeedsAttention ? 1 : 0
+                            border.color: root.theme.accentColor
+                            Image { anchors.centerIn: parent; width: 18; height: 18; source: trayIcon.modelData.icon }
+                            MouseArea {
+                                id: trayMouse
+                                anchors.fill: parent; hoverEnabled: true
+                                acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+                                onClicked: event => {
+                                    if (event.button === Qt.MiddleButton) trayIcon.modelData.secondaryActivate();
+                                    else if (event.button === Qt.RightButton || trayIcon.modelData.onlyMenu) {
+                                        bar.openTrayMenu(trayIcon.modelData);
+                                    } else trayIcon.modelData.activate();
+                                }
+                                onWheel: event => trayIcon.modelData.scroll(event.angleDelta.y || event.angleDelta.x, event.angleDelta.y === 0)
                             }
-                            onWheel: event => trayIcon.modelData.scroll(event.angleDelta.y || event.angleDelta.x, event.angleDelta.y === 0)
                         }
                     }
                 }
-                BarButton {
+                BarIsland {
                     theme: root.theme
-                    text: root.notifications.length ? "󰂚 " + root.notifications.length : "󰂜"
-                    selected: bar.activePanel === "notifications"
-                    onClicked: bar.activePanel = selected ? "" : "notifications"
-                }
-                BarButton {
-                    theme: root.theme
-                    text: !root.audio ? "󰕾 —" : root.audio.muted ? "󰖁 Stumm" : "󰕾 " + Math.round(root.audio.volume * 100) + " %"
-                    selected: bar.activePanel === "audio"
-                    onClicked: bar.activePanel = selected ? "" : "audio"
-                    onSecondaryClicked: root.toggleMute()
-                    onScrolled: delta => { if (root.audio) root.setVolume(root.audio.volume + delta * 0.05); }
-                }
-                BarButton {
-                    theme: root.theme
-                    text: "⏻"
-                    selected: bar.menuOpen
-                    onClicked: {
-                        if (bar.menuOpen) bar.cancelPower();
-                        else bar.menuOpen = true;
+                    BarButton {
+                        theme: root.theme
+                        text: root.notifications.length ? "󰂚 " + root.notifications.length : "󰂜"
+                        selected: bar.activePanel === "notifications"
+                        onClicked: bar.activePanel = selected ? "" : "notifications"
+                    }
+                    BarButton {
+                        theme: root.theme
+                        text: !root.audio ? "󰕾 —" : root.audio.muted ? "󰖁 Stumm" : "󰕾 " + Math.round(root.audio.volume * 100) + " %"
+                        selected: bar.activePanel === "audio"
+                        onClicked: bar.activePanel = selected ? "" : "audio"
+                        onSecondaryClicked: root.toggleMute()
+                        onScrolled: delta => { if (root.audio) root.setVolume(root.audio.volume + delta * 0.05); }
+                    }
+                    BarButton {
+                        theme: root.theme
+                        text: "⏻"
+                        selected: bar.menuOpen
+                        onClicked: {
+                            if (bar.menuOpen) bar.cancelPower();
+                            else bar.menuOpen = true;
+                        }
                     }
                 }
             }
@@ -371,7 +380,7 @@ ShellRoot {
                 visible: bar.trayMenu !== null
                 screen: bar.screen
                 anchors { top: true; right: true }
-                margins { top: root.theme.barHeight + 8; right: 8 }
+                margins { top: root.theme.barHeight + 6; right: 8 }
                 implicitWidth: Math.min(320, bar.screen.width - 16)
                 implicitHeight: Math.min(500, trayMenuView.implicitHeight + 24)
                 color: "transparent"
@@ -385,9 +394,9 @@ ShellRoot {
                 Rectangle {
                     id: trayMenuRoot
                     anchors.fill: parent
-                    radius: 16
-                    color: root.theme.backgroundColor
-                    border.color: root.theme.borderColor
+                    radius: root.theme.panelRadius
+                    color: root.theme.glassColor
+                    border.color: root.theme.glassBorderColor
                     focus: true
                     property bool windowActive: Window.active
                     onWindowActiveChanged: {
@@ -414,9 +423,9 @@ ShellRoot {
                     top: true
                     right: bar.activePanel === "audio" || bar.activePanel === "notifications"
                 }
-                margins { top: root.theme.barHeight + 12; right: bar.activePanel === "audio" || bar.activePanel === "notifications" ? 12 : 0 }
+                margins { top: root.theme.barHeight + 6; right: bar.activePanel === "audio" || bar.activePanel === "notifications" ? 8 : 0 }
                 implicitWidth: Math.min(400, bar.screen.width - 24)
-                implicitHeight: Math.min(Math.max(150, panelLoader.implicitHeight + 82), bar.screen.height - root.theme.barHeight - 24)
+                implicitHeight: Math.min(Math.max(150, panelLoader.implicitHeight + 82), bar.screen.height - root.theme.barHeight - 18)
                 color: "transparent"
                 exclusionMode: ExclusionMode.Ignore
                 WlrLayershell.layer: WlrLayer.Overlay
@@ -425,7 +434,7 @@ ShellRoot {
                 onVisibleChanged: if (!visible) gainedFocus = false
                 Rectangle {
                     id: detailsPanelRoot
-                    anchors.fill: parent; radius: 18; color: root.theme.backgroundColor; border.color: root.theme.borderColor
+                    anchors.fill: parent; radius: root.theme.panelRadius; color: root.theme.glassColor; border.color: root.theme.glassBorderColor
                     focus: true
                     property bool windowActive: Window.active
                     onWindowActiveChanged: {
@@ -440,7 +449,7 @@ ShellRoot {
                             Text {
                                 width: parent.width
                                 text: bar.activePanel === "audio" ? "Audio" : bar.activePanel === "media" ? "Medien" : bar.activePanel === "calendar" ? "Kalender" : "Benachrichtigungen"
-                                color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 18
+                                color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 20
                             }
                         }
                         Flickable {
@@ -493,8 +502,8 @@ ShellRoot {
                     anchors.centerIn: parent
                     width: bar.pending ? 380 : Math.min(620, menu.width - 32)
                     height: bar.pending ? 330 : 260
-                    color: root.theme.backgroundColor; radius: 24
-                    border.color: root.theme.borderColor
+                    color: root.theme.glassColor; radius: 28
+                    border.color: root.theme.glassBorderColor
                     focus: true
                     Behavior on width { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                     Behavior on height { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
@@ -516,7 +525,7 @@ ShellRoot {
                             anchors.horizontalCenter: parent.horizontalCenter
                             visible: bar.pending === ""
                             text: "Sitzung und System"
-                            color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 20
+                            color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 22
                         }
                         Row {
                             visible: bar.pending === ""
@@ -526,8 +535,8 @@ ShellRoot {
                                 Rectangle {
                                     id: powerTile
                                     required property var modelData
-                                    width: (parent.width - 36) / 4; height: 112; radius: 18
-                                    color: powerMouse.containsMouse || activeFocus ? root.theme.accentColor : root.theme.surfaceColor
+                                    width: (parent.width - 36) / 4; height: 112; radius: 22
+                                    color: powerMouse.containsMouse || activeFocus ? root.theme.accentColor : root.theme.glassSurfaceColor
                                     activeFocusOnTab: true
                                     enabled: !["lock", "logout"].includes(modelData.action) || root.backendAvailable
                                     opacity: enabled ? 1 : 0.4
@@ -540,7 +549,7 @@ ShellRoot {
                                     Column {
                                         anchors.centerIn: parent; spacing: 10
                                         Text { anchors.horizontalCenter: parent.horizontalCenter; text: powerTile.modelData.icon; font.family: root.theme.fontFamily; font.pixelSize: 34; color: powerMouse.containsMouse || powerTile.activeFocus ? root.theme.backgroundColor : root.theme.accentColor }
-                                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: powerTile.modelData.label; font.family: root.theme.fontFamily; font.pixelSize: 11; color: powerMouse.containsMouse || powerTile.activeFocus ? root.theme.backgroundColor : root.theme.textColor }
+                                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: powerTile.modelData.label; font.family: root.theme.fontFamily; font.pixelSize: 13; color: powerMouse.containsMouse || powerTile.activeFocus ? root.theme.backgroundColor : root.theme.textColor }
                                     }
                                     MouseArea { id: powerMouse; anchors.fill: parent; hoverEnabled: true; onClicked: powerTile.activate() }
                                 }
@@ -589,13 +598,13 @@ ShellRoot {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: bar.pending ? bar.powerActions[bar.pending].title : ""
                                 color: root.theme.textColor
-                                font.family: root.theme.fontFamily; font.pixelSize: 20; font.bold: true
+                                font.family: root.theme.fontFamily; font.pixelSize: 22; font.bold: true
                             }
                             Text {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: "Automatisch in " + Math.max(1, Math.ceil(bar.countdownProgress * 5)) + " Sekunden"
                                 color: root.theme.mutedColor
-                                font.family: root.theme.fontFamily; font.pixelSize: 12
+                                font.family: root.theme.fontFamily; font.pixelSize: 14
                             }
                             BarButton {
                                 anchors.horizontalCenter: parent.horizontalCenter
@@ -607,7 +616,7 @@ ShellRoot {
                             anchors.horizontalCenter: parent.horizontalCenter
                             visible: bar.pending === "" || bar.errorText !== ""
                             text: bar.errorText || "Esc zum Schließen"
-                            color: root.theme.mutedColor; font.family: root.theme.fontFamily; font.pixelSize: 12
+                            color: root.theme.mutedColor; font.family: root.theme.fontFamily; font.pixelSize: 14
                         }
                     }
                 }
@@ -621,9 +630,13 @@ ShellRoot {
             id: toastWindow
             required property var modelData
             screen: modelData
-            visible: root.toastNotifications.length > 0
+            // Translucent panels on the right would show the toasts through them; the
+            // notification center lists them anyway.
+            readonly property var screenBar: bars.instances.find(b => b.screen === modelData) || null
+            readonly property bool rightPanelOpen: screenBar !== null && (screenBar.activePanel === "notifications" || screenBar.activePanel === "audio" || screenBar.trayMenu !== null)
+            visible: root.toastNotifications.length > 0 && !rightPanelOpen
             anchors { top: true; right: true }
-            margins { top: root.theme.barHeight + 12; right: 12 }
+            margins { top: root.theme.barHeight + 6; right: 8 }
             implicitWidth: Math.min(390, screen.width - 24)
             implicitHeight: toastColumn.implicitHeight
             color: "transparent"
