@@ -50,7 +50,7 @@ ShellRoot {
             let terminal = [];
             const count = Number(Quickshell.env("MYWM_TERMINAL_COUNT") || "0");
             for (let i = 0; i < count; i++) terminal.push(String(Quickshell.env("MYWM_TERMINAL_" + i)));
-            if (terminal.length === 0) terminal = ["kitty"];
+            if (terminal.length === 0) terminal = ["foot"];
             command = terminal.concat(["-e"], command);
         }
         launching = true;

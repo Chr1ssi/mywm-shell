@@ -38,7 +38,7 @@ case "${1:-}" in
     ;;
   launcher)
     export MYWM_TERMINAL_COUNT="${MYWM_TERMINAL_COUNT:-1}"
-    export MYWM_TERMINAL_0="${MYWM_TERMINAL_0:-kitty}"
+    export MYWM_TERMINAL_0="${MYWM_TERMINAL_0:-foot}"
     exec qs --path "$MYWM_SHELL_DIR/shell.qml" --no-duplicate
     ;;
   wallpaper)

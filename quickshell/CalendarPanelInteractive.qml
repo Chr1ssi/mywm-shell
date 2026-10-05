@@ -278,6 +278,6 @@ Column {
     }
     BarButton {
         width: panel.width; theme: panel.theme; text: "Kalender-App öffnen"
-        onClicked: Quickshell.execDetached(["kitty", "--class", "mywm-calendar", "--title", "Kalender", "mywm-calendar", "app"])
+        onClicked: Quickshell.execDetached(["foot", "--app-id", "mywm-calendar", "--title", "Kalender", "mywm-calendar", "app"])
     }
 }
