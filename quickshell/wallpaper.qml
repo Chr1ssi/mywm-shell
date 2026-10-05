@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 
+// The wallpaper itself is drawn by the compositor (MyWM-Smithay); this is the picker.
 ShellRoot {
     id: root
     property Theme theme: Theme {}
@@ -121,36 +122,6 @@ ShellRoot {
         function current(): string { return root.wallpaper; }
         function geometry(): string { return JSON.stringify({desktop: root.desktop, screens: Quickshell.screens.map(s => ({name: s.name, x: s.x, y: s.y, width: s.width, height: s.height}))}); }
         function isOpen(): bool { return root.pickerOpen; }
-    }
-    Variants {
-        model: Quickshell.screens
-        PanelWindow {
-            id: background
-            required property var modelData
-            screen: modelData
-            anchors { top: true; bottom: true; left: true; right: true }
-            exclusionMode: ExclusionMode.Ignore
-            WlrLayershell.layer: WlrLayer.Background
-            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-            WlrLayershell.namespace: "mywm-wallpaper"
-            color: root.theme.backgroundColor
-            Item {
-                anchors.fill: parent
-                clip: true
-                Image {
-                    x: root.desktop.x - background.screen.x
-                    y: root.desktop.y - background.screen.y
-                    width: root.desktop.width
-                    height: root.desktop.height
-                    source: root.displayedWallpaper
-                    asynchronous: true
-                    fillMode: Image.PreserveAspectCrop
-                    sourceSize.width: Math.ceil(root.desktop.width * root.desktop.scale)
-                    sourceSize.height: Math.ceil(root.desktop.height * root.desktop.scale)
-                    onStatusChanged: if (status === Image.Error) root.errorText = "Das gespeicherte Bild fehlt oder kann nicht geladen werden. Bitte neu auswählen.";
-                }
-            }
-        }
     }
     LazyLoader {
         active: root.pickerOpen

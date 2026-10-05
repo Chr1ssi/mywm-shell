@@ -1,7 +1,7 @@
 # mywm-shell
 
 Quickshell-Oberfläche für mywm: Bar, Launcher, Audio, Medien, Systemtray,
-Benachrichtigungen und ein durchgehendes Wallpaper mit Picker.
+Benachrichtigungen und den Wallpaper-Picker (das Bild selbst zeichnet MyWM-Smithay).
 
 ## Entwicklung
 
