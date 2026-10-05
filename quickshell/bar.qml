@@ -284,23 +284,29 @@ ShellRoot {
                     onClicked: root.send("scratchpad")
                 }
             }
-            BarIsland {
-                theme: root.theme
+            Row {
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: root.theme.barMargin
-                BarButton {
+                spacing: 8
+                BarIsland {
+                    theme: root.theme
                     visible: bar.activePlayer !== null
-                    width: visible ? Math.min(260, bar.width * 0.24) : 0
-                    theme: root.theme
-                    text: bar.activePlayer ? "󰎆 " + (bar.activePlayer.trackTitle || bar.activePlayer.identity) : ""
-                    selected: bar.activePanel === "media"
-                    onClicked: bar.activePanel = selected ? "" : "media"
+                    BarButton {
+                        width: Math.min(260, bar.width * 0.24)
+                        theme: root.theme
+                        text: bar.activePlayer ? "󰎆 " + (bar.activePlayer.trackTitle || bar.activePlayer.identity) : ""
+                        selected: bar.activePanel === "media"
+                        onClicked: bar.activePanel = selected ? "" : "media"
+                    }
                 }
-                BarButton {
+                BarIsland {
                     theme: root.theme
-                    text: root.clockText
-                    selected: bar.activePanel === "calendar"
-                    onClicked: bar.activePanel = selected ? "" : "calendar"
+                    BarButton {
+                        theme: root.theme
+                        text: root.clockText
+                        selected: bar.activePanel === "calendar"
+                        onClicked: bar.activePanel = selected ? "" : "calendar"
+                    }
                 }
             }
             Row {
@@ -353,6 +359,9 @@ ShellRoot {
                         onSecondaryClicked: root.toggleMute()
                         onScrolled: delta => { if (root.audio) root.setVolume(root.audio.volume + delta * 0.05); }
                     }
+                }
+                BarIsland {
+                    theme: root.theme
                     BarButton {
                         theme: root.theme
                         text: "⏻"
