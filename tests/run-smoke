@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# Runs the smoke tests in nested MyWM-Smithay sessions on a private Xvfb with a private D-Bus,
+# so the real session is left alone (its notification daemon, PipeWire and outputs).
+#
+#   nix develop -c tests/run-smoke              # all tests
+#   nix develop -c tests/run-smoke bar launcher # some of them (names without _smoke.py)
+#
+# The compositor is the Nix package of the MyWM-Smithay checkout next to this repository
+# (MYWM_SOURCE_DIR: another checkout); MYWM_TEST_BINARY overrides it. (Not MYWM_BINARY: a running
+# mywm session exports that for itself.) The shell under test is always
+# this repository's quickshell/ directory.
+set -uo pipefail
+cd "$(dirname "$0")/.."
+
+source_dir=$(realpath "${MYWM_SOURCE_DIR:-../MyWM-Smithay}")
+if [ -z "${MYWM_TEST_BINARY:-}" ]; then
+    package=$(nix build --no-link --print-out-paths "$source_dir") || { echo 'MyWM-Smithay does not build' >&2; exit 1; }
+    export MYWM_TEST_BINARY="$package/bin/mywm-compositor"
+fi
+# Nested, the compositor opens X11 at run time; its package leaves X11 out (the hardware session
+# needs none), so take the libraries from MyWM-Smithay's own development shell.
+if [ -z "${MYWM_TEST_LIBRARY_PATH:-}" ]; then
+    MYWM_TEST_LIBRARY_PATH=$(nix develop "$source_dir" -c printenv LD_LIBRARY_PATH) || exit 1
+    export MYWM_TEST_LIBRARY_PATH
+fi
+
+tests=("$@")
+if [ ${#tests[@]} -eq 0 ]; then
+    for file in tests/*_smoke.py; do
+        name=${file#tests/}
+        tests+=("${name%_smoke.py}")
+    done
+fi
+
+# Xvfb picks a free display number and reports it on the given descriptor.
+exec {display_fd}<> <(:)
+Xvfb -displayfd "$display_fd" -screen 0 1280x800x24 +extension GLX >/dev/null 2>&1 &
+xvfb=$!
+trap 'kill "$xvfb" 2>/dev/null' EXIT
+read -r -t 10 -u "$display_fd" display_number || { echo 'Xvfb did not start' >&2; exit 1; }
+export DISPLAY=":$display_number" PYTHONPATH=tests
+unset WAYLAND_DISPLAY
+
+# A session bus without service directories: nothing is activated on demand (portals would outlive
+# the test), and the shell's notification server does not meet the real session's.
+bus_config=$(mktemp --suffix=.conf)
+trap 'kill "$xvfb" 2>/dev/null; rm -f "$bus_config"' EXIT
+cat >"$bus_config" <<'BUS'
+<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+  <type>session</type>
+  <listen>unix:tmpdir=/tmp</listen>
+  <auth>EXTERNAL</auth>
+  <policy context="default">
+    <allow send_destination="*" eavesdrop="true"/>
+    <allow eavesdrop="true"/>
+    <allow own="*"/>
+  </policy>
+</busconfig>
+BUS
+
+failed=()
+for name in "${tests[@]}"; do
+    log=$(mktemp)
+    printf '%-10s' "$name"
+    if timeout 300 dbus-run-session --config-file="$bus_config" -- python3 "tests/${name}_smoke.py" >"$log" 2>&1; then
+        echo ok
+    else
+        echo FAILED
+        tail -n 15 "$log" | sed 's/^/    /'
+        failed+=("$name")
+    fi
+    rm -f "$log"
+done
+[ ${#failed[@]} -eq 0 ]

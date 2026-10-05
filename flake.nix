@@ -31,5 +31,23 @@
           default = shell;
           mywm-shell = shell;
         });
+
+      # Tools for tests/run-smoke (the compositor itself comes from a MyWM-Smithay checkout).
+      devShells = forAllSystems (system:
+        let pkgs = nixpkgs.legacyPackages.${system}; in
+        {
+          default = pkgs.mkShell {
+            packages = with pkgs; [
+              python3
+              quickshell
+              xorg-server # Xvfb
+              dbus # dbus-run-session
+              grim
+              kanshi
+              pipewire # pipewire, pw-metadata, pw-dump
+              libnotify # notify-send
+            ];
+          };
+        });
     };
 }

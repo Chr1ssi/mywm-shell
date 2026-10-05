@@ -1,44 +1,22 @@
 #!/usr/bin/env python3
-"""Real isolated River/Quickshell bar test; never executes host power actions."""
+"""Real Quickshell bar in an isolated nested MyWM-Smithay session; never executes host power actions."""
 import json
 import os
 from pathlib import Path
-import signal
 import shutil
 import socket
 import subprocess
 import tempfile
 import time
 
-SHELL_ROOT = Path(__file__).resolve().parents[1]
-ROOT = Path(os.environ.get("MYWM_SOURCE_DIR", str(SHELL_ROOT.parent / "mywm"))).resolve()
-MYWM_BINARY = Path(os.environ.get("MYWM_BINARY", str(ROOT / "target/debug/mywm"))).resolve()
-
-
-def wait_for(fn):
-    deadline = time.monotonic() + 8
-    while time.monotonic() < deadline:
-        result = fn()
-        if result:
-            return result
-        time.sleep(0.05)
-    raise AssertionError("Timed out waiting for bar/WM")
+from session import MYWM_BINARY, Session, wait_for
 
 
 def main():
     with tempfile.TemporaryDirectory(prefix="mywm-bar-") as directory:
         base = Path(directory)
-        runtime = base / "runtime"
-        runtime.mkdir(mode=0o700)
-        env = dict(os.environ, MYWM_SHELL_DIR=str(SHELL_ROOT / "quickshell"), XDG_RUNTIME_DIR=str(runtime), XDG_CONFIG_HOME=str(base / "config"), GDK_BACKEND="wayland",
-                   WLR_BACKENDS="headless", WLR_HEADLESS_OUTPUTS="3", WLR_RENDERER="pixman",
-                   QT_QPA_PLATFORM="wayland", QT_QUICK_BACKEND="software", QT_QUICK_CONTROLS_STYLE="Basic",
-                   MYWM_CONFIG=str(ROOT / "config/mywm.toml"), MYWM_SOCKET=str(runtime / "control.sock"))
-        for key in ["WAYLAND_DISPLAY", "WAYLAND_SOCKET", "DISPLAY"]:
-            env.pop(key, None)
-        config = base / "mywm.toml"
-        config.write_text((ROOT / "config/mywm.toml").read_text().replace("DP-1", "HEADLESS-3").replace("DP-3", "HEADLESS-1").replace("HDMI-A-1", "HEADLESS-2"))
-        env["MYWM_CONFIG"] = str(config)
+        session = Session(base, outputs=3)
+        env = session.env
         pipewire_config = base / "pipewire.conf"
         pipewire_binary = Path(shutil.which("pipewire") or "/usr/bin/pipewire").resolve()
         config_text = (pipewire_binary.parent.parent / "share/pipewire/pipewire.conf").read_text()
@@ -50,12 +28,8 @@ def main():
         pipewire = subprocess.Popen(["pipewire", "-c", str(pipewire_config)], env=env,
                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         bar = None
-        with (base / "river.log").open("w+") as river_log, (base / "bar.log").open("w+") as bar_log:
-            river = subprocess.Popen(["river", "-no-xwayland", "-c", str(MYWM_BINARY)], env=env,
-                                     stdout=river_log, stderr=subprocess.STDOUT, start_new_session=True)
+        with session, (base / "bar.log").open("w+") as bar_log:
             try:
-                wait_for(lambda: Path(env["MYWM_SOCKET"]).exists())
-                env["WAYLAND_DISPLAY"] = next(p.name for p in runtime.glob("wayland-*") if p.is_socket())
                 bar = subprocess.Popen([str(MYWM_BINARY), "--bar"], env=env,
                                        stdout=bar_log, stderr=subprocess.STDOUT)
 
@@ -160,22 +134,17 @@ def main():
                 with socket.socket(socket.AF_UNIX) as client:
                     client.connect(env["MYWM_SOCKET"])
                     client.sendall(b"v1 logout\n")
-                    river.wait(timeout=5)
+                    session.process.wait(timeout=5)
                 print("Bar smoke passed: three outputs with one fixed workspace each, workspace switch, foreign workspace rejection, invalid commands, notification dismissal, bar restart, PipeWire volume/mute, logout")
             finally:
                 if bar is not None and bar.poll() is None:
                     bar.terminate()
                     bar.wait(timeout=3)
-                if river.poll() is None:
-                    os.killpg(river.pid, signal.SIGTERM)
-                    river.wait(timeout=3)
                 pipewire.terminate()
                 pipewire.wait(timeout=3)
                 bar_log.seek(0)
                 log = bar_log.read()
                 print(log)
-                river_log.seek(0)
-                print(river_log.read())
                 checked = log
                 assert not any(error in checked for error in ["ERROR", "ReferenceError", "TypeError"]), "Bar QML error"
 
