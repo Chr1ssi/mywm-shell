@@ -88,7 +88,10 @@ ShellRoot {
         id: socket
         path: Quickshell.env("MYWM_SOCKET") || ""
         connected: path !== ""
-        onConnectedChanged: if (!connected) {
+        onConnectedChanged: if (connected) {
+            // From now on the exit binding asks here instead of ending the session at once.
+            root.send("handle-logout");
+        } else {
             root.outputs = [];
             root.scratchpadVisible = false;
             root.scratchpadOccupied = false;
@@ -99,6 +102,11 @@ ShellRoot {
                 if (parts[0] === "v1" && parts[1] === "scratchpad") {
                     root.scratchpadVisible = parts[2] === "1";
                     root.scratchpadOccupied = parts[3] === "1";
+                    return;
+                }
+                if (parts[0] === "v1" && parts[1] === "confirm-logout") {
+                    const index = bars.instances.findIndex(b => b.output && b.output.id === Number(parts[2]));
+                    if (bars.instances.length) bars.instances[Math.max(0, index)].choosePower("logout");
                     return;
                 }
                 if (parts[0] !== "v1" || parts[1] !== "state") return;
@@ -134,6 +142,7 @@ ShellRoot {
         }
         function menu(index: int): void { bars.instances[index].menuOpen = true; }
         function choosePower(index: int, action: string): void { bars.instances[index].choosePower(action); }
+        function powerPending(): string { return bars.instances.map(b => b.pending).find(p => p) || ""; }
     }
     Variants {
         id: bars
@@ -495,7 +504,8 @@ ShellRoot {
                 exclusionMode: ExclusionMode.Ignore
                 WlrLayershell.layer: WlrLayer.Overlay
                 WlrLayershell.namespace: "mywm-power"
-                WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+                // Opened by the exit binding it must take the keyboard at once, or Esc could not stop the countdown.
+                WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
                 color: "transparent"
                 property bool gainedFocus: false
                 onVisibleChanged: if (!visible) gainedFocus = false
@@ -529,6 +539,8 @@ ShellRoot {
                         }
                     }
                     Keys.onEscapePressed: bar.cancelPower()
+                    Keys.onReturnPressed: if (bar.pending) bar.executePower()
+                    Keys.onEnterPressed: if (bar.pending) bar.executePower()
                     Column {
                         anchors.fill: parent; anchors.margins: 24; spacing: 22
                         Text {

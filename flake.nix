@@ -46,6 +46,7 @@
               kanshi
               pipewire # pipewire, pw-metadata, pw-dump
               libnotify # notify-send
+              xdotool # keys into the nested compositor
             ];
           };
         });

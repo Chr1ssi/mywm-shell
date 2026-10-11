@@ -130,12 +130,27 @@ def main():
                 bar = subprocess.Popen([str(MYWM_BINARY), "--bar"], env=env,
                                        stdout=bar_log, stderr=subprocess.STDOUT)
                 wait_for(lambda: status() and status()[0]["active"] == selected)
-                # Logout terminates this isolated compositor, not the host session.
-                with socket.socket(socket.AF_UNIX) as client:
-                    client.connect(env["MYWM_SOCKET"])
-                    client.sendall(b"v1 logout\n")
-                    session.process.wait(timeout=5)
-                print("Bar smoke passed: three outputs with one fixed workspace each, workspace switch, foreign workspace rejection, invalid commands, notification dismissal, bar restart, PipeWire volume/mute, logout")
+                # The restarted bar registered again: the exit binding (Super+m, Alt+m nested) asks
+                # instead of ending the session, and Esc reaches the menu without a click.
+                def key(keys):
+                    window = subprocess.check_output(["xdotool", "search", "--onlyvisible", "--name", "Smithay"],
+                                                     env=env).split()[0].decode()
+                    subprocess.run(["xdotool", "windowfocus", window], env=env, check=True)
+                    subprocess.run(["xdotool", "key", "--delay", "80", keys], env=env, check=True)
+                key("alt+m")
+                wait_for(lambda: ipc("powerPending").stdout.strip() == "logout")
+                if os.environ.get("MYWM_LOGOUT_SCREENSHOT"):
+                    subprocess.run(["grim", os.environ["MYWM_LOGOUT_SCREENSHOT"]], env=env, check=True)
+                key("Escape")
+                wait_for(lambda: ipc("powerPending").stdout.strip() == "")
+                time.sleep(5.5)
+                assert session.process.poll() is None, "the countdown ended the session after Esc"
+                # Enter confirms at once; the bar's logout terminates this isolated compositor, not the host session.
+                key("alt+m")
+                wait_for(lambda: ipc("powerPending").stdout.strip() == "logout")
+                key("Return")
+                session.process.wait(timeout=3)
+                print("Bar smoke passed: three outputs with one fixed workspace each, workspace switch, foreign workspace rejection, invalid commands, notification dismissal, bar restart, PipeWire volume/mute, exit binding confirmation, logout")
             finally:
                 if bar is not None and bar.poll() is None:
                     bar.terminate()
