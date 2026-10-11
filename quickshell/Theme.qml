@@ -11,6 +11,8 @@ SystemPalette {
         return token && token.default && token.default.hex ? token.default.hex : fallback;
     }
     readonly property string fontFamily: "JetBrainsMono Nerd Font"
+    // Icons here get their real width; in fontFamily they overhang to the right of their cell.
+    readonly property string iconFontFamily: "JetBrainsMono Nerd Font Propo"
     readonly property int panelPadding: 16
     // The bar window is transparent; its groups float in it as rounded islands.
     readonly property int barHeight: 40

@@ -365,6 +365,7 @@ ShellRoot {
                     BarButton {
                         theme: root.theme
                         text: "⏻"
+                        fontFamily: root.theme.iconFontFamily
                         selected: bar.menuOpen
                         onClicked: {
                             if (bar.menuOpen) bar.cancelPower();

@@ -6,6 +6,7 @@ Rectangle {
     property string text: ""
     property bool selected: false
     property bool marked: false
+    property string fontFamily: theme.fontFamily
     signal clicked()
     signal secondaryClicked()
     signal scrolled(real delta)
@@ -19,13 +20,17 @@ Rectangle {
     opacity: enabled ? 1 : 0.45
     Text {
         id: label
-        anchors.centerIn: parent
+        // Center the line inside the full height: centerIn would round the 19 px text box
+        // to a whole-pixel offset and leave icons visibly high.
+        anchors.horizontalCenter: parent.horizontalCenter
         width: parent.width - 12
+        height: parent.height
         horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
         text: button.text
         color: button.selected ? button.theme.accentColor : button.theme.textColor
-        font.family: button.theme.fontFamily; font.pixelSize: 14
+        font.family: button.fontFamily; font.pixelSize: 14
         font.bold: button.marked || button.selected
     }
     Rectangle {
