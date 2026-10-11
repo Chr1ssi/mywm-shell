@@ -16,6 +16,9 @@ ShellRoot {
     readonly property bool backendAvailable: socket.connected
     property bool scratchpadVisible: false
     property bool scratchpadOccupied: false
+    // A game is shown fullscreen: only critical notifications pop up over it; the rest wait in the list.
+    property bool gaming: false
+    onGamingChanged: if (gaming) toastNotifications = toastNotifications.filter(n => n && n.urgency === NotificationUrgency.Critical)
     property var notifications: []
     property var toastNotifications: []
     property var closedNotificationIds: []
@@ -81,7 +84,8 @@ ShellRoot {
                 root.removeNotification(notification);
             });
             root.notifications = [notification].concat(root.notifications.filter(item => item && item.id !== notification.id));
-            root.toastNotifications = [notification].concat(root.toastNotifications.filter(item => item && item.id !== notification.id)).slice(0, 4);
+            if (!root.gaming || notification.urgency === NotificationUrgency.Critical)
+                root.toastNotifications = [notification].concat(root.toastNotifications.filter(item => item && item.id !== notification.id)).slice(0, 4);
         }
     }
     Socket {
@@ -95,6 +99,7 @@ ShellRoot {
             root.outputs = [];
             root.scratchpadVisible = false;
             root.scratchpadOccupied = false;
+            root.gaming = false;
         }
         parser: SplitParser {
             onRead: data => {
@@ -102,6 +107,10 @@ ShellRoot {
                 if (parts[0] === "v1" && parts[1] === "scratchpad") {
                     root.scratchpadVisible = parts[2] === "1";
                     root.scratchpadOccupied = parts[3] === "1";
+                    return;
+                }
+                if (parts[0] === "v1" && parts[1] === "gaming") {
+                    root.gaming = parts[2] === "1";
                     return;
                 }
                 if (parts[0] === "v1" && parts[1] === "confirm-logout") {
@@ -129,6 +138,7 @@ ShellRoot {
         function status(): string { return JSON.stringify(root.outputs); }
         function audioStatus(): string { return JSON.stringify(root.audio ? {volume: root.audio.volume, muted: root.audio.muted} : null); }
         function notificationCount(): int { return root.notifications.length; }
+        function toastCount(): int { return root.toastNotifications.length; }
         function dismissNotification(index: int): void {
             if (index >= 0 && index < root.notifications.length)
                 root.dismissNotification(root.notifications[index]);
