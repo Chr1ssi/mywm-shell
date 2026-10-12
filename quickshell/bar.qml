@@ -18,6 +18,8 @@ ShellRoot {
     property bool scratchpadOccupied: false
     // A game is shown fullscreen: only critical notifications pop up over it; the rest wait in the list.
     property bool gaming: false
+    // Something records or streams the screen or a window.
+    property bool capturing: false
     // Why the compositor could not load its configuration file; shown until fixed or dismissed.
     property string configError: ""
     property string dismissedConfigError: ""
@@ -104,6 +106,7 @@ ShellRoot {
             root.scratchpadVisible = false;
             root.scratchpadOccupied = false;
             root.gaming = false;
+            root.capturing = false;
             root.configError = "";
         }
         parser: SplitParser {
@@ -116,6 +119,10 @@ ShellRoot {
                 }
                 if (parts[0] === "v1" && parts[1] === "config") {
                     root.configError = parts[2] === "error" ? parts.slice(3).join(" ") : "";
+                    return;
+                }
+                if (parts[0] === "v1" && parts[1] === "capture") {
+                    root.capturing = parts[2] === "1";
                     return;
                 }
                 if (parts[0] === "v1" && parts[1] === "gaming") {
@@ -149,6 +156,7 @@ ShellRoot {
         function notificationCount(): int { return root.notifications.length; }
         function toastCount(): int { return root.toastNotifications.length; }
         function configError(): string { return root.showConfigError ? root.configError : ""; }
+        function capturing(): bool { return root.capturing; }
         function dismissNotification(index: int): void {
             if (index >= 0 && index < root.notifications.length)
                 root.dismissNotification(root.notifications[index]);
@@ -342,6 +350,18 @@ ShellRoot {
                 anchors.right: parent.right; anchors.rightMargin: 8
                 y: root.theme.barMargin
                 spacing: 8
+                BarIsland {
+                    theme: root.theme
+                    visible: root.capturing
+                    Text {
+                        height: 26
+                        leftPadding: 8; rightPadding: 8
+                        verticalAlignment: Text.AlignVCenter
+                        text: "󰑊 Aufnahme"
+                        color: root.theme.alertColor
+                        font.family: root.theme.fontFamily; font.pixelSize: 14; font.bold: true
+                    }
+                }
                 // Tray icons belong to other applications; the shell's own status sits apart.
                 BarIsland {
                     theme: root.theme

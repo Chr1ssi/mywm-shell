@@ -25,6 +25,8 @@ SystemPalette {
     readonly property color textColor: color("on_surface", Quickshell.env("MYWM_COLOR_TEXT") || text)
     readonly property color mutedColor: color("on_surface_variant", Quickshell.env("MYWM_COLOR_MUTED") || placeholderText)
     readonly property color accentColor: color("primary", Quickshell.env("MYWM_COLOR_ACCENT") || highlight)
+    // Recording and other things that should not go unnoticed.
+    readonly property color alertColor: color("error", "#f38ba8")
     readonly property color borderColor: color("outline_variant", Quickshell.env("MYWM_COLOR_BORDER") || mid)
     // Layer surfaces get no compositor blur, so translucency is plain alpha.
     readonly property color glassColor: Qt.rgba(backgroundColor.r, backgroundColor.g, backgroundColor.b, glassOpacity)
