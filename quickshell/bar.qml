@@ -20,6 +20,8 @@ ShellRoot {
     property bool gaming: false
     // Something records or streams the screen or a window.
     property bool capturing: false
+    // An app asked what to share; the compositor's overview is picking.
+    property bool choosing: false
     // Why the compositor could not load its configuration file; shown until fixed or dismissed.
     property string configError: ""
     property string dismissedConfigError: ""
@@ -107,6 +109,7 @@ ShellRoot {
             root.scratchpadOccupied = false;
             root.gaming = false;
             root.capturing = false;
+            root.choosing = false;
             root.configError = "";
         }
         parser: SplitParser {
@@ -119,6 +122,10 @@ ShellRoot {
                 }
                 if (parts[0] === "v1" && parts[1] === "config") {
                     root.configError = parts[2] === "error" ? parts.slice(3).join(" ") : "";
+                    return;
+                }
+                if (parts[0] === "v1" && parts[1] === "choosing") {
+                    root.choosing = parts[2] === "1";
                     return;
                 }
                 if (parts[0] === "v1" && parts[1] === "capture") {
@@ -157,6 +164,7 @@ ShellRoot {
         function toastCount(): int { return root.toastNotifications.length; }
         function configError(): string { return root.showConfigError ? root.configError : ""; }
         function capturing(): bool { return root.capturing; }
+        function choosing(): bool { return root.choosing; }
         function dismissNotification(index: int): void {
             if (index >= 0 && index < root.notifications.length)
                 root.dismissNotification(root.notifications[index]);
@@ -696,7 +704,7 @@ ShellRoot {
             // notification center lists them anyway.
             readonly property var screenBar: bars.instances.find(b => b.screen === modelData) || null
             readonly property bool rightPanelOpen: screenBar !== null && (screenBar.activePanel === "notifications" || screenBar.activePanel === "audio" || screenBar.trayMenu !== null)
-            visible: (root.toastNotifications.length > 0 || root.showConfigError) && !rightPanelOpen
+            visible: (root.toastNotifications.length > 0 || root.showConfigError || root.choosing) && !rightPanelOpen
             anchors { top: true; right: true }
             margins { top: root.theme.barHeight + 6; right: 8 }
             implicitWidth: Math.min(390, screen.width - 24)
@@ -711,6 +719,32 @@ ShellRoot {
                 id: toastColumn
                 width: parent.width
                 spacing: 8
+                Rectangle {
+                    visible: root.choosing
+                    width: toastColumn.width
+                    implicitHeight: chooseText.implicitHeight + 24
+                    radius: 18
+                    color: root.theme.glassColor
+                    border.width: 2
+                    border.color: root.theme.alertColor
+                    Column {
+                        id: chooseText
+                        anchors { left: parent.left; right: parent.right; top: parent.top; margins: 12 }
+                        spacing: 4
+                        Text {
+                            text: "󰑊 Was soll geteilt werden?"
+                            color: root.theme.textColor
+                            font.family: root.theme.fontFamily; font.pixelSize: 15; font.bold: true
+                        }
+                        Text {
+                            width: parent.width
+                            text: "Fenster anklicken · Kachel daneben oder Enter: ganzer Monitor · D: dynamisch, mit den Cast-Tasten umschaltbar · Esc: abbrechen"
+                            wrapMode: Text.Wrap
+                            color: root.theme.textColor
+                            font.family: root.theme.fontFamily; font.pixelSize: 13
+                        }
+                    }
+                }
                 Rectangle {
                     visible: root.showConfigError
                     width: toastColumn.width

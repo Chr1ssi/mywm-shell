@@ -46,6 +46,14 @@ def main():
                     subprocess.run(["grim", os.environ["MYWM_CAPTURE_SCREENSHOT"]], env=env, check=True)
                 client.sendall(b"v1 capture 0\n")
                 wait_for(lambda: ipc("capturing") == "false")
+                # While the user picks what to share, the bar says how.
+                client.sendall(b"v1 choosing 1\n")
+                wait_for(lambda: ipc("choosing") == "true")
+                if os.environ.get("MYWM_CHOOSING_SCREENSHOT"):
+                    time.sleep(0.3)
+                    subprocess.run(["grim", os.environ["MYWM_CHOOSING_SCREENSHOT"]], env=env, check=True)
+                client.sendall(b"v1 choosing 0\n")
+                wait_for(lambda: ipc("choosing") == "false")
                 print("Capture smoke passed: the indicator follows the compositor's capture flag")
             finally:
                 if bar is not None and bar.poll() is None:
