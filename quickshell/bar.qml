@@ -18,6 +18,10 @@ ShellRoot {
     property bool scratchpadOccupied: false
     // A game is shown fullscreen: only critical notifications pop up over it; the rest wait in the list.
     property bool gaming: false
+    // Why the compositor could not load its configuration file; shown until fixed or dismissed.
+    property string configError: ""
+    property string dismissedConfigError: ""
+    readonly property bool showConfigError: configError !== "" && configError !== dismissedConfigError
     onGamingChanged: if (gaming) toastNotifications = toastNotifications.filter(n => n && n.urgency === NotificationUrgency.Critical)
     property var notifications: []
     property var toastNotifications: []
@@ -100,6 +104,7 @@ ShellRoot {
             root.scratchpadVisible = false;
             root.scratchpadOccupied = false;
             root.gaming = false;
+            root.configError = "";
         }
         parser: SplitParser {
             onRead: data => {
@@ -107,6 +112,10 @@ ShellRoot {
                 if (parts[0] === "v1" && parts[1] === "scratchpad") {
                     root.scratchpadVisible = parts[2] === "1";
                     root.scratchpadOccupied = parts[3] === "1";
+                    return;
+                }
+                if (parts[0] === "v1" && parts[1] === "config") {
+                    root.configError = parts[2] === "error" ? parts.slice(3).join(" ") : "";
                     return;
                 }
                 if (parts[0] === "v1" && parts[1] === "gaming") {
@@ -139,6 +148,7 @@ ShellRoot {
         function audioStatus(): string { return JSON.stringify(root.audio ? {volume: root.audio.volume, muted: root.audio.muted} : null); }
         function notificationCount(): int { return root.notifications.length; }
         function toastCount(): int { return root.toastNotifications.length; }
+        function configError(): string { return root.showConfigError ? root.configError : ""; }
         function dismissNotification(index: int): void {
             if (index >= 0 && index < root.notifications.length)
                 root.dismissNotification(root.notifications[index]);
@@ -666,7 +676,7 @@ ShellRoot {
             // notification center lists them anyway.
             readonly property var screenBar: bars.instances.find(b => b.screen === modelData) || null
             readonly property bool rightPanelOpen: screenBar !== null && (screenBar.activePanel === "notifications" || screenBar.activePanel === "audio" || screenBar.trayMenu !== null)
-            visible: root.toastNotifications.length > 0 && !rightPanelOpen
+            visible: (root.toastNotifications.length > 0 || root.showConfigError) && !rightPanelOpen
             anchors { top: true; right: true }
             margins { top: root.theme.barHeight + 6; right: 8 }
             implicitWidth: Math.min(390, screen.width - 24)
@@ -681,6 +691,49 @@ ShellRoot {
                 id: toastColumn
                 width: parent.width
                 spacing: 8
+                Rectangle {
+                    visible: root.showConfigError
+                    width: toastColumn.width
+                    implicitHeight: configText.implicitHeight + 24
+                    radius: 18
+                    color: root.theme.glassColor
+                    border.width: 2
+                    border.color: root.theme.accentColor
+                    Column {
+                        id: configText
+                        anchors { left: parent.left; right: parent.right; top: parent.top; margins: 12 }
+                        spacing: 4
+                        Row {
+                            width: parent.width
+                            spacing: 8
+                            Text {
+                                width: parent.width - configClose.width - 8
+                                text: "Konfiguration fehlerhaft"
+                                color: root.theme.textColor
+                                font.family: root.theme.fontFamily; font.pixelSize: 15; font.bold: true
+                            }
+                            BarButton {
+                                id: configClose
+                                theme: root.theme; text: "×"; width: 24
+                                onClicked: root.dismissedConfigError = root.configError
+                            }
+                        }
+                        Text {
+                            width: parent.width
+                            text: root.configError
+                            wrapMode: Text.Wrap
+                            color: root.theme.textColor
+                            font.family: root.theme.fontFamily; font.pixelSize: 14
+                        }
+                        Text {
+                            width: parent.width
+                            text: "Bis zur Korrektur gilt die zuletzt geladene Konfiguration, beim Start die Standardwerte."
+                            wrapMode: Text.Wrap
+                            color: root.theme.mutedColor
+                            font.family: root.theme.fontFamily; font.pixelSize: 12
+                        }
+                    }
+                }
                 Repeater {
                     model: root.toastNotifications
                     NotificationCard {
