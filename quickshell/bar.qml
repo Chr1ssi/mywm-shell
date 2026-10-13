@@ -23,6 +23,9 @@ ShellRoot {
     property bool capturing: false
     // An app asked what to share; the compositor's overview is picking.
     property bool choosing: false
+    // The color picker is on; the color under the pointer ("" until the compositor sampled one).
+    property bool picking: false
+    property string pickedColor: ""
     // Why the compositor could not load its configuration file; shown until fixed or dismissed.
     property string configError: ""
     // A warm screen (gammastep through the compositor's gamma control); kept across logins.
@@ -143,6 +146,7 @@ ShellRoot {
             root.gaming = false;
             root.capturing = false;
             root.choosing = false;
+            root.picking = false;
             root.configError = "";
         }
         parser: SplitParser {
@@ -155,6 +159,11 @@ ShellRoot {
                 }
                 if (parts[0] === "v1" && parts[1] === "config") {
                     root.configError = parts[2] === "error" ? parts.slice(3).join(" ") : "";
+                    return;
+                }
+                if (parts[0] === "v1" && parts[1] === "picking") {
+                    root.picking = parts[2] === "1";
+                    root.pickedColor = root.picking ? (parts[3] || "") : "";
                     return;
                 }
                 if (parts[0] === "v1" && parts[1] === "choosing") {
@@ -198,6 +207,7 @@ ShellRoot {
         function configError(): string { return root.showConfigError ? root.configError : ""; }
         function capturing(): bool { return root.capturing; }
         function choosing(): bool { return root.choosing; }
+        function pickedColor(): string { return root.picking ? root.pickedColor || "…" : ""; }
         function nightLight(): bool { return root.nightLight; }
         function setNightLight(on: bool): void { root.setNightLight(on); }
         function dismissNotification(index: int): void {
@@ -756,7 +766,7 @@ ShellRoot {
             // notification center lists them anyway.
             readonly property var screenBar: bars.instances.find(b => b.screen === modelData) || null
             readonly property bool rightPanelOpen: screenBar !== null && (screenBar.activePanel === "notifications" || screenBar.activePanel === "audio" || screenBar.trayMenu !== null)
-            visible: (root.toastNotifications.length > 0 || root.showConfigError || root.choosing) && !rightPanelOpen
+            visible: (root.toastNotifications.length > 0 || root.showConfigError || root.choosing || root.picking) && !rightPanelOpen
             anchors { top: true; right: true }
             margins { top: root.theme.barHeight + 6; right: 8 }
             implicitWidth: Math.min(390, screen.width - 24)
@@ -793,6 +803,39 @@ ShellRoot {
                             text: "Fenster anklicken · Kachel daneben oder Enter: ganzer Monitor · D: dynamisch, mit den Cast-Tasten umschaltbar · Esc: abbrechen"
                             wrapMode: Text.Wrap
                             color: root.theme.textColor
+                            font.family: root.theme.fontFamily; font.pixelSize: 13
+                        }
+                    }
+                }
+                Rectangle {
+                    visible: root.picking
+                    width: toastColumn.width
+                    implicitHeight: 72
+                    radius: 18
+                    color: root.theme.glassColor
+                    border.width: 1
+                    border.color: root.theme.glassBorderColor
+                    Rectangle {
+                        id: pickedSwatch
+                        x: 12; anchors.verticalCenter: parent.verticalCenter
+                        width: 48; height: 48; radius: 12
+                        color: root.pickedColor || "transparent"
+                        border.width: 1
+                        border.color: root.theme.borderColor
+                    }
+                    Column {
+                        anchors { left: pickedSwatch.right; leftMargin: 12; right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                        spacing: 4
+                        Text {
+                            text: "󰈊 " + (root.pickedColor || "Farbpipette")
+                            color: root.theme.textColor
+                            font.family: root.theme.fontFamily; font.pixelSize: 15; font.bold: true
+                        }
+                        Text {
+                            width: parent.width
+                            text: "Klick kopiert die Farbe · Esc: abbrechen"
+                            wrapMode: Text.Wrap
+                            color: root.theme.mutedColor
                             font.family: root.theme.fontFamily; font.pixelSize: 13
                         }
                     }

@@ -54,6 +54,16 @@ def main():
                     subprocess.run(["grim", os.environ["MYWM_CHOOSING_SCREENSHOT"]], env=env, check=True)
                 client.sendall(b"v1 choosing 0\n")
                 wait_for(lambda: ipc("choosing") == "false")
+                # The color picker: a card with the color under the pointer once the compositor sampled it.
+                client.sendall(b"v1 picking 1\n")
+                wait_for(lambda: ipc("pickedColor") == "…")
+                client.sendall(b"v1 picking 1 #ff8800\n")
+                wait_for(lambda: ipc("pickedColor") == "#ff8800")
+                if os.environ.get("MYWM_PICKING_SCREENSHOT"):
+                    time.sleep(0.3)
+                    subprocess.run(["grim", os.environ["MYWM_PICKING_SCREENSHOT"]], env=env, check=True)
+                client.sendall(b"v1 picking 0\n")
+                wait_for(lambda: ipc("pickedColor") == "")
                 print("Capture smoke passed: the indicator follows the compositor's capture flag")
             finally:
                 if bar is not None and bar.poll() is None:

@@ -65,6 +65,8 @@ Die zentrale TOML-Palette von mywm färbt alle Komponenten ein. Die Bar bleibt
   wechseln die Vorschau. Klick auf ein Nachbarbild wählt es aus; Klick auf die
   Auswahl oder Enter übernimmt es für alle Monitore. Tippen filtert Dateinamen,
   Escape oder Klick auf den Hintergrund schließt den Picker.
+- **Farbpipette:** Solange sie im Compositor läuft (`color_picker`), zeigt eine Karte rechts oben
+  die Farbe unter dem Mauszeiger als Farbfeld und Hex-Wert.
 - **Commandcenter:** Das Symbol links neben der Glocke zeigt den Zustand (Bluetooth an
   oder verbunden, Nachtlicht an, sonst ein Zahnrad) und öffnet das Panel. Die Kacheln
   schalten Bluetooth und das Nachtlicht. Darunter stehen die lokalen IPv4-Adressen,
