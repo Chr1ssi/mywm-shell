@@ -1,6 +1,6 @@
 # mywm-shell
 
-Quickshell-Oberfläche für mywm: Bar, Launcher, Audio, Medien, Systemtray,
+Quickshell-Oberfläche für mywm: Bar, Launcher, Commandcenter, Audio, Medien, Systemtray,
 Benachrichtigungen und den Wallpaper-Picker (das Bild selbst zeichnet MyWM-Smithay).
 
 ## Entwicklung
@@ -48,6 +48,8 @@ Die laufende Sitzung bleibt unberührt. Der Compositor ist das Nix-Paket des
 MyWM-Smithay-Checkouts daneben (`MYWM_SOURCE_DIR` für einen anderen Pfad,
 `MYWM_TEST_BINARY` für ein anderes Binary). Gedrehte Ausgänge prüft der
 Wallpaper-Test nicht, weil der nested Compositor sie ungedreht aufnimmt.
+Der Commandcenter-Test bekommt einen nachgebauten BlueZ-Dienst (`tests/fake_bluez.py`)
+auf einem eigenen Systembus sowie Platzhalter für `gammastep`, `ip` und `wl-copy`.
 
 
 ## Gestaltung und Bedienung
@@ -60,6 +62,16 @@ Die zentrale TOML-Palette von mywm färbt alle Komponenten ein. Die Bar bleibt
   wechseln die Vorschau. Klick auf ein Nachbarbild wählt es aus; Klick auf die
   Auswahl oder Enter übernimmt es für alle Monitore. Tippen filtert Dateinamen,
   Escape oder Klick auf den Hintergrund schließt den Picker.
+- **Commandcenter:** Das Symbol links neben der Glocke zeigt den Zustand (Bluetooth an
+  oder verbunden, Nachtlicht an, sonst ein Zahnrad) und öffnet das Panel. Die Kacheln
+  schalten Bluetooth und das Nachtlicht. Darunter stehen die lokalen IPv4-Adressen,
+  ein Klick kopiert eine. Die Geräteliste zeigt gekoppelte Geräte mit Akkustand zum
+  Verbinden und Trennen; „Suchen“ findet neue, „Koppeln“ koppelt sie und vertraut ihnen,
+  damit sie sich später selbst verbinden. Bluetooth braucht BlueZ
+  (`hardware.bluetooth.enable`). Das Nachtlicht hält `gammastep -O 4000` am Laufen,
+  solange es an ist (über das Gamma-Protokoll des Compositors, also nur auf echter
+  Hardware); die Wahl liegt in `$XDG_STATE_HOME/mywm/night-light` und gilt auch nach
+  der nächsten Anmeldung.
 - **Audio:** Klick auf die Lautstärke öffnet Ausgabe, Mikrofone und App-Streams.
   Gerätenamen wählen das Standardgerät; Regler und Prozentknopf steuern
   Lautstärke und Stummschaltung. Rechtsklick auf das Audio-Symbol schaltet stumm,
@@ -88,7 +100,7 @@ Die zentrale TOML-Palette von mywm färbt alle Komponenten ein. Die Bar bleibt
   Escape, ein Klick außerhalb oder „Abbrechen“ stoppen den Countdown. Tab und
   Enter erlauben Tastaturbedienung.
 
-Kalender-, Audio- und Medienpanels schließen über × oder Escape. Sie und das Powermenü
+Commandcenter-, Kalender-, Audio- und Medienpanels schließen über × oder Escape. Sie und das Powermenü
 öffnen auf dem Monitor der angeklickten Bar.
 
 Gestaltungsreferenzen: [Omarchy Image Picker](https://github.com/basecamp/omarchy/blob/quattro/shell/plugins/image-picker/ImagePicker.qml)

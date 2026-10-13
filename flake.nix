@@ -38,7 +38,8 @@
         {
           default = pkgs.mkShell {
             packages = with pkgs; [
-              python3
+              # dbus and gi: the stand-in for BlueZ (tests/fake_bluez.py)
+              (python3.withPackages (ps: [ ps.dbus-python ps.pygobject3 ]))
               quickshell
               xorg-server # Xvfb
               dbus # dbus-run-session

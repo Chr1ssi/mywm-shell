@@ -4,6 +4,7 @@ import QtQuick.Window
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import Quickshell.Bluetooth
 import Quickshell.Services.Pipewire
 import Quickshell.Services.Mpris
 import Quickshell.Services.Notifications
@@ -24,6 +25,20 @@ ShellRoot {
     property bool choosing: false
     // Why the compositor could not load its configuration file; shown until fixed or dismissed.
     property string configError: ""
+    // A warm screen (gammastep through the compositor's gamma control); kept across logins.
+    property bool nightLight: false
+    readonly property var bluetoothAdapter: Bluetooth.defaultAdapter
+    readonly property string controlIcon: {
+        const icons = [];
+        if (bluetoothAdapter && bluetoothAdapter.enabled)
+            icons.push(bluetoothAdapter.devices.values.some(device => device.connected) ? "󰂱" : "󰂯");
+        if (nightLight) icons.push("󰖔");
+        return icons.length ? icons.join(" ") : "󰒓";
+    }
+    function setNightLight(on: bool): void {
+        nightLight = on;
+        nightLightFile.setText(on ? "1\n" : "0\n");
+    }
     property string dismissedConfigError: ""
     readonly property bool showConfigError: configError !== "" && configError !== dismissedConfigError
     onGamingChanged: if (gaming) toastNotifications = toastNotifications.filter(n => n && n.urgency === NotificationUrgency.Critical)
@@ -96,6 +111,24 @@ ShellRoot {
                 root.toastNotifications = [notification].concat(root.toastNotifications.filter(item => item && item.id !== notification.id)).slice(0, 4);
         }
     }
+    FileView {
+        id: nightLightFile
+        path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/mywm/night-light"
+        printErrors: false
+        onLoaded: root.nightLight = text().trim() === "1"
+    }
+    Process {
+        id: nightLightProcess
+        // One-shot mode keeps running on Wayland: the warm ramp lasts as long as the process.
+        command: ["gammastep", "-m", "wayland", "-O", "4000"]
+        running: root.nightLight
+        onExited: (exitCode, exitStatus) => {
+            if (!root.nightLight) return;
+            // Not switched off: it failed (no gamma control). The saved choice stays for the next login.
+            console.warn("night light: gammastep exited with " + exitCode);
+            root.nightLight = false;
+        }
+    }
     Socket {
         id: socket
         path: Quickshell.env("MYWM_SOCKET") || ""
@@ -165,6 +198,8 @@ ShellRoot {
         function configError(): string { return root.showConfigError ? root.configError : ""; }
         function capturing(): bool { return root.capturing; }
         function choosing(): bool { return root.choosing; }
+        function nightLight(): bool { return root.nightLight; }
+        function setNightLight(on: bool): void { root.setNightLight(on); }
         function dismissNotification(index: int): void {
             if (index >= 0 && index < root.notifications.length)
                 root.dismissNotification(root.notifications[index]);
@@ -174,7 +209,7 @@ ShellRoot {
         function mute(): void { root.toggleMute(); }
         function workspace(output: string, number: int): void { root.send("workspace " + output + " " + number); }
         function panel(index: int, name: string): void {
-            if (index >= 0 && index < bars.instances.length && ["", "audio", "calendar", "media", "notifications"].includes(name)) bars.instances[index].activePanel = name;
+            if (index >= 0 && index < bars.instances.length && ["", "audio", "calendar", "control", "media", "notifications"].includes(name)) bars.instances[index].activePanel = name;
         }
         function menu(index: int): void { bars.instances[index].menuOpen = true; }
         function choosePower(index: int, action: string): void { bars.instances[index].choosePower(action); }
@@ -191,6 +226,8 @@ ShellRoot {
             readonly property var activePlayer: Mpris.players.values.find(player => player.isPlaying) || null
             property bool menuOpen: false
             property string activePanel: ""
+            // Panels of the right-hand buttons open under them; the others in the middle.
+            readonly property bool panelOnRight: ["audio", "control", "notifications"].includes(activePanel)
             property var trayMenu: null
             property string trayMenuTitle: ""
             onMenuOpenChanged: {
@@ -404,6 +441,13 @@ ShellRoot {
                     theme: root.theme
                     BarButton {
                         theme: root.theme
+                        text: root.controlIcon
+                        fontFamily: root.theme.iconFontFamily
+                        selected: bar.activePanel === "control"
+                        onClicked: bar.activePanel = selected ? "" : "control"
+                    }
+                    BarButton {
+                        theme: root.theme
                         text: root.notifications.length ? "󰂚 " + root.notifications.length : "󰂜"
                         selected: bar.activePanel === "notifications"
                         onClicked: bar.activePanel = selected ? "" : "notifications"
@@ -488,9 +532,9 @@ ShellRoot {
                 screen: bar.screen
                 anchors {
                     top: true
-                    right: bar.activePanel === "audio" || bar.activePanel === "notifications"
+                    right: bar.panelOnRight
                 }
-                margins { top: root.theme.barHeight + 6; right: bar.activePanel === "audio" || bar.activePanel === "notifications" ? 8 : 0 }
+                margins { top: root.theme.barHeight + 6; right: bar.panelOnRight ? 8 : 0 }
                 implicitWidth: Math.min(400, bar.screen.width - 24)
                 implicitHeight: Math.min(Math.max(150, panelLoader.implicitHeight + 82), bar.screen.height - root.theme.barHeight - 18)
                 color: "transparent"
@@ -515,7 +559,7 @@ ShellRoot {
                             width: parent.width
                             Text {
                                 width: parent.width
-                                text: bar.activePanel === "audio" ? "Audio" : bar.activePanel === "media" ? "Medien" : bar.activePanel === "calendar" ? "Kalender" : "Benachrichtigungen"
+                                text: bar.activePanel === "audio" ? "Audio" : bar.activePanel === "control" ? "Commandcenter" : bar.activePanel === "media" ? "Medien" : bar.activePanel === "calendar" ? "Kalender" : "Benachrichtigungen"
                                 color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 20
                             }
                         }
@@ -526,12 +570,20 @@ ShellRoot {
                             Loader {
                                 id: panelLoader
                                 width: parent.width
-                                sourceComponent: bar.activePanel === "audio" ? audioPanel : bar.activePanel === "media" ? mediaPanel : bar.activePanel === "calendar" ? calendarPanel : notificationPanel
+                                sourceComponent: bar.activePanel === "audio" ? audioPanel : bar.activePanel === "control" ? controlPanel : bar.activePanel === "media" ? mediaPanel : bar.activePanel === "calendar" ? calendarPanel : notificationPanel
                             }
                         }
                     }
                 }
                 Component { id: audioPanel; AudioPanel { theme: root.theme } }
+                Component {
+                    id: controlPanel
+                    CommandCenter {
+                        theme: root.theme
+                        nightLight: root.nightLight
+                        onNightLightToggled: root.setNightLight(!root.nightLight)
+                    }
+                }
                 Component { id: mediaPanel; MediaPanel { theme: root.theme } }
                 Component { id: calendarPanel; CalendarPanelInteractive { theme: root.theme } }
                 Component {
