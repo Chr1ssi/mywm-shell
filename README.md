@@ -1,7 +1,7 @@
 # mywm-shell
 
 Quickshell-Oberfläche für mywm: Bar, Launcher, Commandcenter, Audio, Medien, Systemtray,
-Benachrichtigungen und den Wallpaper-Picker (das Bild selbst zeichnet MyWM-Smithay).
+Benachrichtigungen, Sperrbildschirm, Anmeldebildschirm (greetd) und den Wallpaper-Picker (das Bild selbst zeichnet MyWM-Smithay).
 
 ## Entwicklung
 
@@ -50,6 +50,9 @@ MyWM-Smithay-Checkouts daneben (`MYWM_SOURCE_DIR` für einen anderen Pfad,
 Wallpaper-Test nicht, weil der nested Compositor sie ungedreht aufnimmt.
 Der Commandcenter-Test bekommt einen nachgebauten BlueZ-Dienst (`tests/fake_bluez.py`)
 auf einem eigenen Systembus sowie Platzhalter für `gammastep`, `ip` und `wl-copy`.
+Der Sperrbildschirm-Test prüft Passwörter über ein eigenes PAM-Verzeichnis (`pam_exec` mit einem
+Testpasswort, nie ein echtes Konto), der Anmeldebildschirm-Test spricht mit einem nachgebauten
+greetd (`tests/fake_greetd.py`).
 
 
 ## Gestaltung und Bedienung
@@ -99,6 +102,18 @@ Die zentrale TOML-Palette von mywm färbt alle Komponenten ein. Die Bar bleibt
   Fünf-Sekunden-Countdown; danach wird die Aktion automatisch ausgeführt.
   Escape, ein Klick außerhalb oder „Abbrechen“ stoppen den Countdown. Tab und
   Enter erlauben Tastaturbedienung.
+
+- **Sperrbildschirm** (`lock.qml`): startet der Compositor (`Super+Escape`, Idle). Wallpaper,
+  große Uhr und eine Glas-Karte mit Passwortfeld auf jedem Monitor; das Passwort prüft PAM
+  (Dienst `mywm-lock`, `MYWM_PAM_DIR` für ein anderes Verzeichnis). Nur eine erfolgreiche
+  Prüfung entsperrt. Stirbt der Sperrbildschirm, bleibt die Sitzung gesperrt und der
+  Compositor startet einen neuen, der die Sperre übernimmt.
+- **Anmeldebildschirm** (`greeter.qml`): für greetd, gestartet von `mywm-compositor --greeter`
+  (NixOS: `programs.mywm.greeter`). Gleiche Karte wie beim Sperrbildschirm, dazu Benutzername,
+  Sitzungswahl (bei mehr als einer Sitzung) sowie Neustart und Ausschalten. Wallpaper und
+  Farben spiegelt mywm in das Greeter-Verzeichnis. Umgebung: `MYWM_GREETER_BACKGROUND`,
+  `MYWM_GREETER_USER`, `MYWM_GREETER_SESSIONS` (Verzeichnis der `wayland-sessions`),
+  `MYWM_THEME_STATE`.
 
 Commandcenter-, Kalender-, Audio- und Medienpanels schließen über × oder Escape. Sie und das Powermenü
 öffnen auf dem Monitor der angeklickten Bar.

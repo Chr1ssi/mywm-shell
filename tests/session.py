@@ -25,9 +25,9 @@ def wait_for(fn, timeout=8):
 
 class Session:
     """The compositor with `outputs` outputs side by side (1280x800 each), its own runtime,
-    config and state directories, and no environment of a running session."""
+    config and state directories, and no environment of a running session; `args` go to the compositor."""
 
-    def __init__(self, base, outputs=1, config="", env=None):
+    def __init__(self, base, outputs=1, config="", env=None, args=()):
         if not os.environ.get("DISPLAY"):
             raise AssertionError("DISPLAY is not set; run the tests through tests/run-smoke")
         self.base = Path(base)
@@ -49,7 +49,7 @@ class Session:
         compositor_env = dict(self.env)
         if os.environ.get("MYWM_TEST_LIBRARY_PATH"):
             compositor_env["LD_LIBRARY_PATH"] = os.environ["MYWM_TEST_LIBRARY_PATH"]
-        self.process = subprocess.Popen([str(MYWM_BINARY)], env=compositor_env, stdout=self.log,
+        self.process = subprocess.Popen([str(MYWM_BINARY), *args], env=compositor_env, stdout=self.log,
                                         stderr=subprocess.STDOUT, start_new_session=True)
         wait_for(lambda: Path(self.env["MYWM_SOCKET"]).exists() or self.process.poll() is not None, 15)
         if self.process.poll() is not None:

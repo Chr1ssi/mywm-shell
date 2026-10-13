@@ -49,6 +49,8 @@
               libnotify # notify-send
               xdotool # keys into the nested compositor
             ];
+            # The lock test's own PAM service checks a test password with these modules.
+            MYWM_TEST_PAM_MODULES = "${pkgs.linux-pam}/lib/security";
           };
         });
     };
