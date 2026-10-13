@@ -103,8 +103,9 @@ Die zentrale TOML-Palette von mywm färbt alle Komponenten ein. Die Bar bleibt
   Escape, ein Klick außerhalb oder „Abbrechen“ stoppen den Countdown. Tab und
   Enter erlauben Tastaturbedienung.
 
-- **Sperrbildschirm** (`lock.qml`): startet der Compositor (`Super+Escape`, Idle). Wallpaper,
-  große Uhr und eine Glas-Karte mit Passwortfeld auf jedem Monitor; das Passwort prüft PAM
+- **Sperrbildschirm** (`lock.qml`): startet der Compositor (`Super+Escape`, Idle). Wallpaper auf
+  jedem Monitor, große Uhr und eine Glas-Karte mit Passwortfeld nur auf dem Hauptmonitor (der mit
+  Workspace 1, `MYWM_PRIMARY_OUTPUT`); getippt werden kann auf jedem. Das Passwort prüft PAM
   (Dienst `mywm-lock`, `MYWM_PAM_DIR` für ein anderes Verzeichnis). Nur eine erfolgreiche
   Prüfung entsperrt. Stirbt der Sperrbildschirm, bleibt die Sitzung gesperrt und der
   Compositor startet einen neuen, der die Sperre übernimmt.

@@ -67,6 +67,17 @@ def main():
                 time.sleep(1)
                 screenshot("greeter")
 
+                # The card is on the primary monitor (workspace 1) only; the other shows the background alone.
+                def colors(output):
+                    shot = subprocess.run(["grim", "-o", output, "-t", "ppm", "-"], env=env, capture_output=True,
+                                          check=True).stdout
+                    # Binary PPM: "P6", width, height, maxval, then RGB triples.
+                    header = shot.split(maxsplit=4)
+                    pixels = header[4]
+                    return len({pixels[i:i + 3] for i in range(0, len(pixels) - 2, 3)})
+                assert colors("winit") > 100, "no login card on the primary monitor"
+                assert colors("virtual-1") == 1, "the second monitor shows more than the background"
+
                 type_password("falsch")
                 wait_for(lambda: ipc("message") == "Falsches Passwort")
                 # Quickshell ends the failed session itself (cancel_session).

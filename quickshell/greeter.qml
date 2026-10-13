@@ -23,6 +23,9 @@ ShellRoot {
     property var sessions: []
     property int session: 0
     readonly property string background: Quickshell.env("MYWM_GREETER_BACKGROUND") || ""
+    // The monitor with workspace 1 (named by the compositor), else the first: only it shows the card.
+    readonly property var primaryScreen: Quickshell.screens.find(s => s.name === Quickshell.env("MYWM_PRIMARY_OUTPUT"))
+        || Quickshell.screens[0] || null
 
     function submit(): void {
         if (busy || user === "" || sessions.length === 0) return;
@@ -87,7 +90,8 @@ ShellRoot {
             exclusionMode: ExclusionMode.Ignore
             color: root.theme.backgroundColor
             WlrLayershell.layer: WlrLayer.Overlay
-            WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+            readonly property bool primary: modelData === root.primaryScreen
+            WlrLayershell.keyboardFocus: primary ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
             WlrLayershell.namespace: "mywm-greeter"
             LoginScreen {
                 id: login
@@ -103,6 +107,7 @@ ShellRoot {
                 sessions: root.sessions
                 session: root.session
                 showPower: true
+                primary: window.primary
                 onUserEdited: text => root.user = text
                 onPasswordEdited: text => root.password = text
                 onSubmitted: root.submit()

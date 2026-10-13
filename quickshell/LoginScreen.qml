@@ -4,8 +4,9 @@ import QtQuick
 import QtQuick.Controls
 import Quickshell
 
-// What the lock screen and the greeter show on every monitor: the wallpaper, a large clock and a glass card that
-// asks for the password. Both look alike by sharing this; the greeter adds the user name, sessions and power.
+// What the lock screen and the greeter show: the wallpaper on every monitor, and on the primary one (workspace 1,
+// `MYWM_PRIMARY_OUTPUT`) a large clock and a glass card that asks for the password. Both look alike by sharing this;
+// the greeter adds the user name, sessions and power.
 Item {
     id: screen
 
@@ -22,14 +23,20 @@ Item {
     property var sessions: []
     property int session: 0
     property bool showPower: false
+    // Only the primary monitor shows the card; elsewhere typing still reaches the shared password.
+    property bool primary: true
     signal passwordEdited(string text)
     signal userEdited(string text)
     signal submitted()
     signal sessionPicked(int index)
     signal powerRequested(string action)
 
+    // A lock surface learns its screen only after it was made: whichever field shows now takes the keys.
+    onPrimaryChanged: focusField()
+
     function focusField(): void {
-        if (askUser && userName === "") userField.forceActiveFocus();
+        if (!primary) hiddenField.forceActiveFocus();
+        else if (askUser && userName === "") userField.forceActiveFocus();
         else passwordField.forceActiveFocus();
     }
 
@@ -44,8 +51,22 @@ Item {
     // Calm the picture so text and glass stay readable on any wallpaper.
     Rectangle { anchors.fill: parent; color: Qt.rgba(0, 0, 0, 0.35) }
 
+    // Keys that reach another monitor (the pointer is there) type into the shared password.
+    TextInput {
+        id: hiddenField
+        visible: !screen.primary
+        opacity: 0
+        echoMode: TextInput.Password
+        text: screen.password
+        enabled: !screen.busy
+        onTextEdited: screen.passwordEdited(text)
+        Keys.onReturnPressed: screen.submitted()
+        Keys.onEnterPressed: screen.submitted()
+    }
+
     SystemClock { id: clock; precision: SystemClock.Seconds }
     Column {
+        visible: screen.primary
         anchors.horizontalCenter: parent.horizontalCenter
         y: parent.height * 0.16
         spacing: 4
@@ -66,6 +87,7 @@ Item {
 
     Rectangle {
         id: card
+        visible: screen.primary
         anchors.horizontalCenter: parent.horizontalCenter
         y: parent.height * 0.52
         width: Math.min(400, parent.width - 48)
@@ -175,7 +197,7 @@ Item {
 
     // Greeter: which session to start (only when there is a choice) and the power buttons.
     Rectangle {
-        visible: screen.sessions.length > 1
+        visible: screen.primary && screen.sessions.length > 1
         anchors { left: parent.left; bottom: parent.bottom; margins: 24 }
         width: sessionRow.implicitWidth + 8; height: screen.theme.islandHeight
         radius: height / 2
@@ -199,7 +221,7 @@ Item {
         }
     }
     Rectangle {
-        visible: screen.showPower
+        visible: screen.primary && screen.showPower
         anchors { right: parent.right; bottom: parent.bottom; margins: 24 }
         width: powerRow.implicitWidth + 8; height: screen.theme.islandHeight
         radius: height / 2

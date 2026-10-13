@@ -14,8 +14,13 @@ ShellRoot {
     property string password: ""
     property string message: ""
     property bool failed: false
+    // Lock surfaces whose screen is built: keys reach a field from then on.
+    property int readySurfaces: 0
     readonly property string userName: Quickshell.env("USER") || ""
     readonly property url background: theme.generated.source ? "file://" + theme.generated.source : ""
+    // The monitor with workspace 1 (named by the compositor), else the first: only it shows the card.
+    readonly property var primaryScreen: Quickshell.screens.find(s => s.name === Quickshell.env("MYWM_PRIMARY_OUTPUT"))
+        || Quickshell.screens[0] || null
 
     function submit(): void {
         if (pam.active || root.password === "") return;
@@ -63,9 +68,14 @@ ShellRoot {
                 busy: pam.active
                 message: root.message
                 messageIsError: root.failed
+                primary: surface.screen === root.primaryScreen
                 onPasswordEdited: text => root.password = text
                 onSubmitted: root.submit()
-                Component.onCompleted: login.focusField()
+                Component.onCompleted: {
+                    login.focusField();
+                    root.readySurfaces += 1;
+                }
+                Component.onDestruction: root.readySurfaces -= 1
             }
         }
     }
@@ -73,6 +83,8 @@ ShellRoot {
     IpcHandler {
         target: "lock"
         function locked(): bool { return lock.locked && lock.secure; }
+        // Locked and drawn on every monitor: typing reaches the password.
+        function ready(): bool { return lock.secure && root.readySurfaces >= Quickshell.screens.length; }
         function message(): string { return root.message; }
     }
 }
