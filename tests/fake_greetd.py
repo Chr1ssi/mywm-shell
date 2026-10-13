@@ -44,11 +44,18 @@ while True:
             if right:
                 write(connection, {"type": "success"})
             else:
+                # Like greetd: the failed session is over, its worker gone.
+                session_user = None
                 write(connection, {"type": "error", "error_type": "auth_error", "description": "pam_authenticate: AUTH_ERR"})
         elif kind == "start_session":
             log.write("start_session " + " ".join(request["cmd"]) + "\n")
             write(connection, {"type": "success"})
         elif kind == "cancel_session":
             log.write("cancel_session\n")
-            write(connection, {"type": "success"})
+            # greetd answers a cancel without a session (after a failed one) with an error.
+            if session_user is None:
+                write(connection, {"type": "error", "error_type": "error",
+                                   "description": "unable to send message: Connection refused (os error 111)"})
+            else:
+                write(connection, {"type": "success"})
     connection.close()

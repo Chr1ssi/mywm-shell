@@ -68,7 +68,9 @@ ShellRoot {
             else if (error) root.message = message;
         }
         function onAuthFailure(message: string): void { root.fail("Falsches Passwort"); }
-        function onError(error: string): void { root.fail("Anmeldung nicht möglich: " + error); }
+        // greetd also answers Quickshell's cancel after a failed attempt with an error; only one during an
+        // attempt counts.
+        function onError(error: string): void { if (root.busy) root.fail("Anmeldung nicht möglich: " + error); }
         function onReadyToLaunch(): void {
             root.message = "Sitzung startet …";
             Greetd.launch(root.sessions[root.session].command);
