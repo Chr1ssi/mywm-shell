@@ -204,7 +204,11 @@ ShellRoot {
                                 Image {
                                     anchors.fill: parent; anchors.margins: tile.selected ? 3 : 1
                                     source: tile.visible ? tile.modelData.url : ""
-                                    sourceSize.width: 1000; sourceSize.height: 600
+                                    // Decoded for the tile's final size (cropping keeps the full height, so a narrow
+                                    // neighbour still needs most of it); the old picture stays until the new one is in.
+                                    sourceSize: tile.selected ? Qt.size(carousel.expandedWidth, carousel.height)
+                                                              : Qt.size(carousel.step + 24, carousel.height - 40)
+                                    retainWhileLoading: true
                                     fillMode: Image.PreserveAspectCrop; asynchronous: true
                                 }
                                 Rectangle { anchors.fill: parent; color: "#66000000"; visible: !tile.selected }
