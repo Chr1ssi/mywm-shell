@@ -16,8 +16,10 @@ Projects/
 ```
 
 Der Flake stellt ein eigenständiges `mywm-shell`-Paket bereit.
-Der Sitzungsstart von MyWM-Smithay verwaltet Bar und Wallpaper-Picker. `mywm-compositor --bar` und
-`mywm-compositor --wallpaper` übergeben Theme und Hilfsprogramme; Super+Space öffnet den Launcher.
+Der Sitzungsstart von MyWM-Smithay startet die Bar (`mywm-compositor --bar`, mit Theme und
+Hilfsprogrammen); Super+Space öffnet den Launcher. Den Wallpaper-Picker startet das Binding über
+`mywm-compositor --wallpaper-picker X Y` erst bei Bedarf, und er beendet sich nach dem Schließen
+(`MYWM_WALLPAPER_OPEN_AT`); `--wallpaper` hält ihn stattdessen dauerhaft bereit.
 `MYWM_SHELL_DIR` kann auf einen anderen absoluten QML-Ordner zeigen.
 
 Die gemeinsame Palette bleibt in mywms TOML unter `[appearance]`.

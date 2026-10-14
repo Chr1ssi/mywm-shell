@@ -107,6 +107,32 @@ def main():
                 assert ipc('isOpen').stdout.strip() == 'true'
                 ipc('close')
                 assert json.loads(saved.read_text())['wallpaper'] == wallpaper
+                # On demand (the binding): the picker opens where it was asked and ends once closed.
+                shell.terminate(); shell.wait(timeout=3)
+                def open_on_demand(x, y):
+                    return subprocess.Popen([str(MYWM_BINARY), '--wallpaper-picker', str(x), str(y)], env=env,
+                                            stdout=shell_log, stderr=subprocess.STDOUT)
+                shell = open_on_demand(1300, 100)
+                wait_for(lambda: ipc('isOpen').stdout.strip() == 'true')
+                wait_for(lambda: ipc('count').stdout.strip() == '2')
+                assert ipc('current').stdout.strip() == wallpaper
+                # Asked again while open, the running picker answers; no second one starts.
+                again = subprocess.run([str(MYWM_BINARY), '--wallpaper-picker', '100', '100'], env=env,
+                                       capture_output=True, timeout=5)
+                assert again.returncode == 0, again.stderr
+                assert shell.poll() is None
+                ipc('close')
+                assert shell.wait(timeout=5) == 0
+                # A choice applies the theme before the picker ends.
+                shell = open_on_demand(100, 100)
+                wait_for(lambda: ipc('count').stdout.strip() == '2')
+                ipc('search', 'second')
+                ipc('choose', 0)
+                assert shell.wait(timeout=10) == 0
+                chosen = json.loads(saved.read_text())['wallpaper']
+                assert chosen.endswith('second.PNG'), chosen
+                theme = json.loads((base/'state/mywm/theme.json').read_text())
+                assert theme['source'].endswith('b second.PNG'), theme['source']
                 if os.environ.get('MYWM_COLLECTION_PREVIEW'):
                     shell.terminate(); shell.wait(timeout=3)
                     config.write_text('wallpaper_directory = "/home/chris/Bilder/Wallpaper"\n')

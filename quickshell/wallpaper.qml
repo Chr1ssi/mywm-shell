@@ -31,13 +31,28 @@ ShellRoot {
     readonly property var results: entries.filter(e => e.name.toLocaleLowerCase().includes(query.toLocaleLowerCase().trim()))
     signal focusSearch()
     readonly property string displayedWallpaper: wallpaper || (entries.length ? entries[0].url : "")
+    // "x,y": started on demand to show the picker there; the process ends once it is closed.
+    readonly property string openAt: Quickshell.env("MYWM_WALLPAPER_OPEN_AT") || ""
+    property bool applying: false
     function openPicker(x: int, y: int): void {
         if (!scan.running) scan.running = true;
         pickerScreen = Quickshell.screens.find(s => x >= s.x && x < s.x + s.width && y >= s.y && y < s.y + s.height) || Quickshell.screens[0];
         query = "";
-        selected = Math.max(0, results.findIndex(e => e.url === displayedWallpaper));
+        selectCurrent();
         pickerOpen = true;
         Qt.callLater(root.focusSearch);
+    }
+    function selectCurrent(): void {
+        selected = Math.max(0, results.findIndex(e => e.url === displayedWallpaper));
+    }
+    // Started on demand, nothing is kept once the picker is closed and the theme applied.
+    function quitWhenDone(): void {
+        if (openAt && !pickerOpen && !saving && !applying) Qt.quit();
+    }
+    onPickerOpenChanged: quitWhenDone()
+    Component.onCompleted: if (openAt) {
+        const [x, y] = openAt.split(",").map(Number);
+        openPicker(x || 0, y || 0);
     }
     function move(delta: int): void {
         if (!results.length) return;
@@ -63,7 +78,11 @@ ShellRoot {
         command: [Quickshell.env("MYWM_WALLPAPER_HELPER"), "--wallpaper-list"]
         running: true
         stdout: StdioCollector {
-            onStreamFinished: root.entries = text.split("\n").filter(line => line.startsWith("file:///")).map(url => ({url: url, name: decodeURIComponent(url.split("/").pop())}))
+            onStreamFinished: {
+                root.entries = text.split("\n").filter(line => line.startsWith("file:///")).map(url => ({url: url, name: decodeURIComponent(url.split("/").pop())}));
+                // Opened right at the start, the list arrives after the picker.
+                if (root.pickerOpen && root.query === "") root.selectCurrent();
+            }
         }
         onExited: (code, status) => { if (code !== 0) root.errorText = "Bildordner konnte nicht gelesen werden: " + root.directory; }
     }
@@ -71,6 +90,8 @@ ShellRoot {
         id: themeApply
         onExited: (code, status) => {
             if (code !== 0) root.errorText = "Farbschema konnte nicht erzeugt werden.";
+            root.applying = false;
+            root.quitWhenDone();
         }
     }
     FileView {
@@ -86,18 +107,21 @@ ShellRoot {
                 root.wallpaper = saved.wallpaper;
             } catch (error) { root.errorText = "Gespeicherte Auswahl konnte nicht gelesen werden."; }
             root.stateReady = true;
+            if (root.pickerOpen && root.query === "") root.selectCurrent();
         }
         onLoadFailed: root.stateReady = true
         onSaved: {
             root.wallpaper = String(validation.source);
-            root.saving = false;
-            root.pickerOpen = false;
+            // Before the picker closes: started on demand, the process waits for the theme.
             const helper = Quickshell.env("MYWM_THEME_HELPER");
             if (helper) {
                 const path = decodeURIComponent(root.wallpaper.replace(/^file:\/\//, ""));
                 themeApply.command = [helper, "--theme-from-wallpaper", path];
+                root.applying = true;
                 themeApply.running = true;
             }
+            root.saving = false;
+            root.pickerOpen = false;
         }
         onSaveFailed: { root.saving = false; root.errorText = "Auswahl konnte nicht gespeichert werden."; }
     }

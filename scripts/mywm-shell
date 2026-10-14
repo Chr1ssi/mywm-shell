@@ -47,7 +47,13 @@ case "${1:-}" in
     exec qs --path "$MYWM_SHELL_DIR/wallpaper.qml" --no-duplicate
     ;;
   wallpaper-picker)
-    exec qs ipc --path "$MYWM_SHELL_DIR/wallpaper.qml" call wallpaper openPicker "${2:-0}" "${3:-0}"
+    # A running picker moves there; otherwise one starts for this use and ends once closed.
+    if qs ipc --path "$MYWM_SHELL_DIR/wallpaper.qml" call wallpaper openPicker "${2:-0}" "${3:-0}" >/dev/null 2>&1; then
+      exit 0
+    fi
+    mkdir -p "$(dirname "$MYWM_WALLPAPER_STATE")"
+    export MYWM_WALLPAPER_HELPER=$0 MYWM_WALLPAPER_OPEN_AT="${2:-0},${3:-0}"
+    exec qs --path "$MYWM_SHELL_DIR/wallpaper.qml" --no-duplicate
     ;;
   wallpaper-list|--wallpaper-list)
     while IFS= read -r -d "" file; do
