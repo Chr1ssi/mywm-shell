@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Controls
+import Quickshell
 
 Column {
     id: center
@@ -37,7 +38,8 @@ Column {
         height: Math.min(470, Math.max(80, contentHeight))
         spacing: 8
         clip: true
-        model: center.notifications
+        // Only cards of added or removed notifications are created or destroyed.
+        model: ScriptModel { values: center.notifications }
         ScrollBar.vertical: ScrollBar {}
         delegate: NotificationCard {
             required property var modelData

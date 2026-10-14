@@ -120,6 +120,15 @@ def main():
                 assert ipc("clearNotifications").returncode == 0
                 wait_for(lambda: ipc("notificationCount").stdout.strip() == "0")
                 assert ipc("panel", 0, "").returncode == 0
+                # A new toast leaves the others' timers running: the first one goes 2.5 s after it came,
+                # not 2.5 s after the second one.
+                subprocess.run(["notify-send", "Toast 1", "läuft ab", "--expire-time=2500"], env=env, check=True)
+                wait_for(lambda: ipc("toastCount").stdout.strip() == "1")
+                time.sleep(1.5)
+                subprocess.run(["notify-send", "Toast 2", "bleibt", "--expire-time=10000"], env=env, check=True)
+                wait_for(lambda: ipc("toastCount").stdout.strip() == "2")
+                wait_for(lambda: ipc("toastCount").stdout.strip() == "1", timeout=1.5)
+                assert ipc("clearNotifications").returncode == 0
                 assert ipc("menu", 0).returncode == 0
                 time.sleep(0.2)
                 if os.environ.get("MYWM_POWER_SCREENSHOT"):

@@ -64,7 +64,8 @@ Item {
         Keys.onEnterPressed: screen.submitted()
     }
 
-    SystemClock { id: clock; precision: SystemClock.Seconds }
+    // The clock shows minutes, and only on the primary monitor.
+    SystemClock { id: clock; precision: SystemClock.Minutes; enabled: screen.primary }
     Column {
         visible: screen.primary
         anchors.horizontalCenter: parent.horizontalCenter

@@ -14,6 +14,8 @@ ShellRoot {
     id: root
     property Theme theme: Theme {}
     property var outputs: []
+    // The last `v1 state` payload `outputs` was built from.
+    property string layoutLine: ""
     readonly property bool backendAvailable: socket.connected
     property bool scratchpadVisible: false
     property bool scratchpadOccupied: false
@@ -184,8 +186,13 @@ ShellRoot {
                     return;
                 }
                 if (parts[0] !== "v1" || parts[1] !== "state") return;
+                // The compositor resends its whole snapshot when any line of it changes; an unchanged
+                // layout must not rebuild the workspace buttons of every bar.
+                const layout = parts[2] || "";
+                if (layout === root.layoutLine && root.outputs.length) return;
+                root.layoutLine = layout;
                 // Per output: id,x,y,width,height,active,left,right,"number:occupied|..." (number 0 is gaming).
-                root.outputs = (parts[2] || "").split(";").filter(s => s.length).map(s => {
+                root.outputs = layout.split(";").filter(s => s.length).map(s => {
                     const v = s.split(",");
                     const workspaces = (v[8] || "").split("|").filter(w => w.length).map(w => {
                         const [number, occupied] = w.split(":");
@@ -431,7 +438,7 @@ ShellRoot {
                             color: trayMouse.containsMouse ? root.theme.surfaceColor : "transparent"
                             border.width: modelData.status === Status.NeedsAttention ? 1 : 0
                             border.color: root.theme.accentColor
-                            Image { anchors.centerIn: parent; width: 18; height: 18; source: trayIcon.modelData.icon }
+                            Image { anchors.centerIn: parent; width: 18; height: 18; sourceSize.width: 18; sourceSize.height: 18; source: trayIcon.modelData.icon }
                             MouseArea {
                                 id: trayMouse
                                 anchors.fill: parent; hoverEnabled: true
@@ -580,6 +587,8 @@ ShellRoot {
                             Loader {
                                 id: panelLoader
                                 width: parent.width
+                                // Closed, no panel stays loaded (the notification list would follow every notification on every monitor).
+                                active: bar.activePanel !== ""
                                 sourceComponent: bar.activePanel === "audio" ? audioPanel : bar.activePanel === "control" ? controlPanel : bar.activePanel === "media" ? mediaPanel : bar.activePanel === "calendar" ? calendarPanel : notificationPanel
                             }
                         }
@@ -884,7 +893,8 @@ ShellRoot {
                     }
                 }
                 Repeater {
-                    model: root.toastNotifications
+                    // Keeps the cards (and their timers) of toasts that stay when another one comes or goes.
+                    model: ScriptModel { values: root.toastNotifications }
                     NotificationCard {
                         id: toast
                         required property var modelData

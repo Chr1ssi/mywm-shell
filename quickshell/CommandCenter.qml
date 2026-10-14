@@ -44,8 +44,10 @@ Column {
 
     // `ip -4 -o addr show scope global`: "2: eno1    inet 192.168.178.56/24 brd … scope global …"
     function parseAddresses(text: string): void {
-        addresses = text.split("\n").map(line => line.trim().split(/\s+/)).filter(f => f.length > 3 && f[2] === "inet")
+        const parsed = text.split("\n").map(line => line.trim().split(/\s+/)).filter(f => f.length > 3 && f[2] === "inet")
             .map(f => ({ device: f[1], address: f[3].split("/")[0] }));
+        // Polled every few seconds: unchanged addresses keep their rows.
+        if (JSON.stringify(parsed) !== JSON.stringify(addresses)) addresses = parsed;
     }
 
     Process {
