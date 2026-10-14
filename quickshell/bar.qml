@@ -327,29 +327,6 @@ ShellRoot {
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
             readonly property bool hasTrayItems: SystemTray.items.values.some(item => item.status !== Status.Passive)
 
-            PanelWindow {
-                visible: bar.output !== null && bar.output.canScrollLeft
-                screen: bar.screen
-                anchors { top: true; bottom: true; left: true }
-                implicitWidth: 5
-                exclusiveZone: 5
-                color: root.theme.accentColor
-                WlrLayershell.layer: WlrLayer.Top
-                WlrLayershell.namespace: "mywm-window-marker-left"
-                WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-            }
-            PanelWindow {
-                visible: bar.output !== null && bar.output.canScrollRight
-                screen: bar.screen
-                anchors { top: true; bottom: true; right: true }
-                implicitWidth: 5
-                exclusiveZone: 5
-                color: root.theme.accentColor
-                WlrLayershell.layer: WlrLayer.Top
-                WlrLayershell.namespace: "mywm-window-marker-right"
-                WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-            }
-
             BarIsland {
                 theme: root.theme
                 x: 8; y: root.theme.barMargin
