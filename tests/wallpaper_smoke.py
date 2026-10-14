@@ -133,6 +133,16 @@ def main():
                 assert chosen.endswith('second.PNG'), chosen
                 theme = json.loads((base/'state/mywm/theme.json').read_text())
                 assert theme['source'].endswith('b second.PNG'), theme['source']
+                # The binding (Super+Shift+w; Alt nested) starts it the same way.
+                window = subprocess.check_output(['xdotool', 'search', '--onlyvisible', '--name', 'Smithay'], env=env).split()[0].decode()
+                subprocess.run(['xdotool', 'windowfocus', window], env=env, check=True)
+                subprocess.run(['xdotool', 'key', '--delay', '80', 'alt+shift+w'], env=env, check=True)
+                def by_path(method):
+                    return subprocess.run(['qs', 'ipc', '--path', str(SHELL_ROOT/'quickshell/wallpaper.qml'), 'call', 'wallpaper', method],
+                                          env=env, capture_output=True, text=True, timeout=2)
+                wait_for(lambda: by_path('isOpen').stdout.strip() == 'true')
+                by_path('close')
+                wait_for(lambda: by_path('isOpen').returncode != 0)
                 if os.environ.get('MYWM_COLLECTION_PREVIEW'):
                     shell.terminate(); shell.wait(timeout=3)
                     config.write_text('wallpaper_directory = "/home/chris/Bilder/Wallpaper"\n')
