@@ -54,7 +54,13 @@ ShellRoot {
             command = terminal.concat(["-e"], command);
         }
         launching = true;
-        Quickshell.execDetached({ command: command, workingDirectory: entry.workingDirectory });
+        // The NixOS Quickshell wrapper limits EGL to NVIDIA for the shell itself. Apps must not inherit it:
+        // Wine/Proton in the Steam runtime then finds no EGL config (REDlauncher: no OpenGL context).
+        Quickshell.execDetached({
+            command: command,
+            workingDirectory: entry.workingDirectory,
+            environment: ({ __EGL_VENDOR_LIBRARY_FILENAMES: null })
+        });
         Qt.quit();
     }
 

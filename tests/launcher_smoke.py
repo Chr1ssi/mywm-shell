@@ -20,7 +20,8 @@ def main():
         terminal_marker = base / "terminal.json"
         probe = base / "probe"
         probe.write_text("#!/usr/bin/env python3\nimport json,os,sys\nfrom pathlib import Path\n"
-                         + f"Path({str(marker)!r}).write_text(json.dumps([sys.argv[1:], os.getcwd()]))\n")
+                         + f"Path({str(marker)!r}).write_text(json.dumps([sys.argv[1:], os.getcwd(),\n"
+                         + "    os.environ.get('__EGL_VENDOR_LIBRARY_FILENAMES')]))\n")
         probe.chmod(0o755)
         terminal = base / "terminal"
         terminal.write_text("#!/usr/bin/env python3\nimport json,sys\nfrom pathlib import Path\n"
@@ -44,8 +45,12 @@ def main():
         with session, (base / "launcher.log").open("w+") as launcher_log:
             try:
                 def start():
+                    # The NixOS Quickshell wrapper sets this for the shell (there: NVIDIA); launched apps must not
+                    # inherit it. Mesa's file keeps the launcher rendering in the nested session.
+                    egl = "/run/opengl-driver/share/glvnd/egl_vendor.d/50_mesa.json"
                     process = subprocess.Popen(["qs", "-p", str(SHELL_ROOT / "quickshell/shell.qml"), "--no-duplicate"],
-                                               env=env, stdout=launcher_log, stderr=subprocess.STDOUT)
+                                               env=env | {"__EGL_VENDOR_LIBRARY_FILENAMES": egl},
+                                               stdout=launcher_log, stderr=subprocess.STDOUT)
                     processes.append(process)
                     def ready():
                         if process.poll() is not None:
@@ -79,7 +84,7 @@ def main():
                     subprocess.run(["grim", os.environ["MYWM_LAUNCHER_SCREENSHOT"]], env=env, check=True, timeout=3)
                 ipc(launcher, "launch")
                 wait_until(marker.exists)
-                assert json.loads(marker.read_text()) == [["two words"], str(base)]
+                assert json.loads(marker.read_text()) == [["two words"], str(base), None]
                 assert launcher.wait(timeout=3) == 0
                 launcher = start()
                 ipc(launcher, "search", "terminal")
