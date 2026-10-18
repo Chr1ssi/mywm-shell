@@ -22,7 +22,10 @@ def main():
         config_text = (pipewire_binary.parent.parent / "share/pipewire/pipewire.conf").read_text()
         config_text = config_text.replace("context.objects = [", """context.objects = [
             { factory = adapter args = { factory.name = support.null-audio-sink node.name = test-sink media.class = Audio/Sink audio.position = [ FL FR ] } }
-            { factory = metadata args = { metadata.name = default metadata.values = [ { key = default.audio.sink value = { name = test-sink } } ] } }
+            { factory = adapter args = { factory.name = support.null-audio-sink node.name = test-mic media.class = Audio/Source/Virtual audio.position = [ FL FR ] } }
+            { factory = adapter args = { factory.name = support.null-audio-sink node.name = test-mic-2 media.class = Audio/Source/Virtual audio.position = [ FL FR ] } }
+            { factory = adapter args = { factory.name = support.null-audio-sink node.name = test-mic-filter media.class = Audio/Source filter.smart = true audio.position = [ FL FR ] } }
+            { factory = metadata args = { metadata.name = default metadata.values = [ { key = default.audio.sink value = { name = test-sink } } { key = default.audio.source value = { name = test-mic } } ] } }
         """, 1)
         pipewire_config.write_text(config_text)
         pipewire = subprocess.Popen(["pipewire", "-c", str(pipewire_config)], env=env,
@@ -111,6 +114,10 @@ def main():
                     assert b"v1 error" in client.recv(4096)
                 if os.environ.get("MYWM_BAR_SCREENSHOT"):
                     subprocess.run(["grim", os.environ["MYWM_BAR_SCREENSHOT"]], env=env, check=True)
+                # A WirePlumber smart filter (the NixOS mic filter) sits in front of the default microphone by itself;
+                # the audio panel offers only the real microphones.
+                assert ipc("panel", 0, "audio").returncode == 0
+                wait_for(lambda: json.loads(ipc("audioInputs", 0).stdout or "null") == ["test-mic", "test-mic-2"])
                 for panel in ["audio", "calendar", "media", "notifications"]:
                     assert ipc("panel", 0, panel).returncode == 0
                     time.sleep(0.3)

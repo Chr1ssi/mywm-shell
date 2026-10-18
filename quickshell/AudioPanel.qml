@@ -13,7 +13,10 @@ Column {
 
     readonly property var nodes: Pipewire.nodes.values
     readonly property var outputs: nodes.filter(node => mediaClass(node) === "Audio/Sink")
-    readonly property var inputs: nodes.filter(node => mediaClass(node).startsWith("Audio/Source"))
+    // A WirePlumber smart filter (the NixOS mic filter) puts itself in front of the default microphone and never
+    // becomes the default; choosing it here would leave no real microphone selected.
+    readonly property var inputs: nodes.filter(node => mediaClass(node).startsWith("Audio/Source")
+        && String(node.properties["filter.smart"] || "") !== "true")
     readonly property var outputStreams: nodes.filter(node => mediaClass(node) === "Stream/Output/Audio")
     readonly property var applications: outputStreams.filter(node =>
         String(node.properties["application.name"] || "") !== "")

@@ -209,6 +209,10 @@ ShellRoot {
         target: "bar"
         function status(): string { return JSON.stringify(root.outputs); }
         function audioStatus(): string { return JSON.stringify(root.audio ? {volume: root.audio.volume, muted: root.audio.muted} : null); }
+        function audioInputs(index: int): string {
+            const panel = index >= 0 && index < bars.instances.length ? bars.instances[index].panelItem : null;
+            return JSON.stringify(panel && panel.inputs ? panel.inputs.map(node => node.name).sort() : null);
+        }
         function notificationCount(): int { return root.notifications.length; }
         function toastCount(): int { return root.toastNotifications.length; }
         function configError(): string { return root.showConfigError ? root.configError : ""; }
@@ -243,6 +247,7 @@ ShellRoot {
             readonly property var activePlayer: Mpris.players.values.find(player => player.isPlaying) || null
             property bool menuOpen: false
             property string activePanel: ""
+            readonly property var panelItem: panelLoader.item
             // Panels of the right-hand buttons open under them; the others in the middle.
             readonly property bool panelOnRight: ["audio", "control", "notifications"].includes(activePanel)
             property var trayMenu: null
