@@ -23,6 +23,11 @@ Hilfsprogrammen); Super+Space öffnet den Launcher. Den Wallpaper-Picker startet
 `MYWM_SHELL_DIR` kann auf einen anderen absoluten QML-Ordner zeigen.
 
 Die gemeinsame Palette bleibt in mywms TOML unter `[appearance]`.
+
+Die Shell spricht die Systemsprache: die erste bekannte aus `LANGUAGE`, `LC_ALL`, `LC_MESSAGES` und `LANG`
+(derzeit Deutsch, alle anderen Sprachen bekommen Englisch). Datum und Uhrzeit folgen dagegen `LC_TIME`.
+Die Texte stehen deutsch im QML (`I18n.tr("…")`), die englischen Entsprechungen in `quickshell/I18n.qml`.
+
 Das eigenständige `mywm-shell`-Programm startet Bar, Launcher, Wallpaper-Picker, Idle-Verhalten und Sitzungssperre. Die Bar kommuniziert über `MYWM_SOCKET` mit mywm.
 
 ## Eigenständiges Paket
@@ -54,7 +59,9 @@ Der Commandcenter-Test bekommt einen nachgebauten BlueZ-Dienst (`tests/fake_blue
 auf einem eigenen Systembus sowie Platzhalter für `gammastep`, `ip` und `wl-copy`.
 Der Sperrbildschirm-Test prüft Passwörter über ein eigenes PAM-Verzeichnis (`pam_exec` mit einem
 Testpasswort, nie ein echtes Konto), der Anmeldebildschirm-Test spricht mit einem nachgebauten
-greetd (`tests/fake_greetd.py`).
+greetd (`tests/fake_greetd.py`). Die Sitzungen laufen auf Deutsch (`LANG=de_DE.UTF-8`), der
+Anmeldebildschirm-Test auf Englisch; der I18n-Test prüft ohne Compositor, dass jeder Text übersetzt ist
+und die Sprachwahl den Locale-Variablen folgt.
 
 
 ## Gestaltung und Bedienung

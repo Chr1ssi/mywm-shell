@@ -73,13 +73,13 @@ Item {
         spacing: 4
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: clock.date.toLocaleTimeString(Qt.locale("de_DE"), "HH:mm")
+            text: clock.date.toLocaleTimeString(Qt.locale(), "HH:mm")
             color: screen.theme.textColor
             font.family: screen.theme.fontFamily; font.pixelSize: 112; font.weight: Font.Light
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: clock.date.toLocaleDateString(Qt.locale("de_DE"), "dddd, d. MMMM")
+            text: clock.date.toLocaleDateString(Qt.locale(), "dddd, d. MMMM")
             color: screen.theme.textColor
             opacity: 0.8
             font.family: screen.theme.fontFamily; font.pixelSize: 22
@@ -129,7 +129,7 @@ Item {
                 leftPadding: 20; rightPadding: 20
                 text: screen.userName
                 onTextEdited: screen.userEdited(text)
-                placeholderText: "Benutzername"
+                placeholderText: I18n.tr("Benutzername")
                 enabled: !screen.busy
                 color: screen.theme.textColor
                 placeholderTextColor: screen.theme.mutedColor
@@ -153,7 +153,7 @@ Item {
                 onTextEdited: screen.passwordEdited(text)
                 echoMode: TextInput.Password
                 passwordCharacter: "●"
-                placeholderText: "Passwort"
+                placeholderText: I18n.tr("Passwort")
                 enabled: !screen.busy
                 focus: true
                 color: screen.theme.textColor

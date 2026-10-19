@@ -113,7 +113,7 @@ ShellRoot {
                 spacing: 12
 
                 Text {
-                    text: "ANWENDUNGEN"
+                    text: I18n.tr("ANWENDUNGEN")
                     color: root.theme.textColor
                     font.family: root.theme.fontFamily; font.pixelSize: 14
                     font.bold: true
@@ -126,7 +126,7 @@ ShellRoot {
                     leftPadding: 20; rightPadding: 20
                     text: root.query
                     onTextChanged: root.query = text
-                    placeholderText: "App suchen …"
+                    placeholderText: I18n.tr("App suchen …")
                     color: root.theme.textColor
                     placeholderTextColor: root.theme.mutedColor
                     selectionColor: root.theme.accentColor
@@ -208,7 +208,7 @@ ShellRoot {
                     Text {
                         anchors.centerIn: parent
                         visible: root.results.length === 0
-                        text: "Keine passenden Anwendungen"
+                        text: I18n.tr("Keine passenden Anwendungen")
                         color: root.theme.mutedColor
                         font.family: root.theme.fontFamily; font.pixelSize: 18
                     }
@@ -217,7 +217,7 @@ ShellRoot {
                 Text {
                     width: parent.width
                     elide: Text.ElideRight
-                    text: root.results.length + " Apps  ·  ↑↓ Auswahl  ·  ↵ Start  ·  Esc"
+                    text: I18n.tr("%1 Apps  ·  ↑↓ Auswahl  ·  ↵ Start  ·  Esc", root.results.length)
                     color: root.theme.mutedColor
                     font.family: root.theme.fontFamily; font.pixelSize: 14
                 }

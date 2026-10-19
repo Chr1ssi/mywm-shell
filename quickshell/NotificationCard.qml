@@ -42,7 +42,7 @@ Rectangle {
                 spacing: 8
                 Text {
                     width: parent.width - closeButton.width - 8
-                    text: card.notification.summary || card.notification.appName || "Benachrichtigung"
+                    text: card.notification.summary || card.notification.appName || I18n.tr("Benachrichtigung")
                     color: card.theme.textColor
                     font.family: card.theme.fontFamily; font.pixelSize: 15; font.bold: true
                     elide: Text.ElideRight

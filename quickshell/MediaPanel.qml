@@ -6,7 +6,7 @@ Column {
     id: panel
     required property var theme
     spacing: 14
-    Text { visible: Mpris.players.values.length === 0; text: "Keine aktive Wiedergabe"; color: panel.theme.mutedColor; font.family: panel.theme.fontFamily; font.pixelSize: 14 }
+    Text { visible: Mpris.players.values.length === 0; text: I18n.tr("Keine aktive Wiedergabe"); color: panel.theme.mutedColor; font.family: panel.theme.fontFamily; font.pixelSize: 14 }
     Repeater {
         model: Mpris.players
         Column {

@@ -46,13 +46,13 @@ Column {
         spacing: 8
 
         Text {
-            text: "Ausgabe"
+            text: I18n.tr("Ausgabe")
             color: panel.theme.accentColor
             font.family: panel.theme.fontFamily; font.pixelSize: 15
         }
         Text {
             visible: panel.currentOutput === null
-            text: "Kein Ausgabegerät"
+            text: I18n.tr("Kein Ausgabegerät")
             color: panel.theme.mutedColor
             font.family: panel.theme.fontFamily; font.pixelSize: 14
         }
@@ -70,7 +70,7 @@ Column {
             visible: panel.outputs.filter(node => node !== panel.currentOutput).length > 0
             theme: panel.theme
             width: parent.width
-            text: panel.outputsExpanded ? "▴ Andere Ausgänge ausblenden" : "▾ Anderen Ausgang wählen"
+            text: panel.outputsExpanded ? "▴ " + I18n.tr("Andere Ausgänge ausblenden") : "▾ " + I18n.tr("Anderen Ausgang wählen")
             onClicked: panel.outputsExpanded = !panel.outputsExpanded
         }
         Column {
@@ -98,13 +98,13 @@ Column {
         spacing: 8
 
         Text {
-            text: "Mikrofon"
+            text: I18n.tr("Mikrofon")
             color: panel.theme.accentColor
             font.family: panel.theme.fontFamily; font.pixelSize: 15
         }
         Text {
             visible: panel.currentInput === null
-            text: "Kein Eingabegerät"
+            text: I18n.tr("Kein Eingabegerät")
             color: panel.theme.mutedColor
             font.family: panel.theme.fontFamily; font.pixelSize: 14
         }
@@ -122,7 +122,7 @@ Column {
             visible: panel.inputs.filter(node => node !== panel.currentInput).length > 0
             theme: panel.theme
             width: parent.width
-            text: panel.inputsExpanded ? "▴ Andere Eingänge ausblenden" : "▾ Anderes Mikrofon wählen"
+            text: panel.inputsExpanded ? "▴ " + I18n.tr("Andere Eingänge ausblenden") : "▾ " + I18n.tr("Anderes Mikrofon wählen")
             onClicked: panel.inputsExpanded = !panel.inputsExpanded
         }
         Column {
@@ -150,13 +150,13 @@ Column {
         spacing: 8
 
         Text {
-            text: "Anwendungen"
+            text: I18n.tr("Anwendungen")
             color: panel.theme.accentColor
             font.family: panel.theme.fontFamily; font.pixelSize: 15
         }
         Text {
             visible: panel.applications.length === 0
-            text: "Keine aktiven Anwendungen"
+            text: I18n.tr("Keine aktiven Anwendungen")
             color: panel.theme.mutedColor
             font.family: panel.theme.fontFamily; font.pixelSize: 14
         }

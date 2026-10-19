@@ -84,12 +84,12 @@ ShellRoot {
                 if (root.pickerOpen && root.query === "") root.selectCurrent();
             }
         }
-        onExited: (code, status) => { if (code !== 0) root.errorText = "Bildordner konnte nicht gelesen werden: " + root.directory; }
+        onExited: (code, status) => { if (code !== 0) root.errorText = I18n.tr("Bildordner konnte nicht gelesen werden: %1", root.directory); }
     }
     Process {
         id: themeApply
         onExited: (code, status) => {
-            if (code !== 0) root.errorText = "Farbschema konnte nicht erzeugt werden.";
+            if (code !== 0) root.errorText = I18n.tr("Farbschema konnte nicht erzeugt werden.");
             root.applying = false;
             root.quitWhenDone();
         }
@@ -105,7 +105,7 @@ ShellRoot {
                 const saved = JSON.parse(text());
                 if (saved.version !== 1 || typeof saved.wallpaper !== "string" || !saved.wallpaper.startsWith("file:///")) throw new Error("Ungültiges Format");
                 root.wallpaper = saved.wallpaper;
-            } catch (error) { root.errorText = "Gespeicherte Auswahl konnte nicht gelesen werden."; }
+            } catch (error) { root.errorText = I18n.tr("Gespeicherte Auswahl konnte nicht gelesen werden."); }
             root.stateReady = true;
             if (root.pickerOpen && root.query === "") root.selectCurrent();
         }
@@ -123,7 +123,7 @@ ShellRoot {
             root.saving = false;
             root.pickerOpen = false;
         }
-        onSaveFailed: { root.saving = false; root.errorText = "Auswahl konnte nicht gespeichert werden."; }
+        onSaveFailed: { root.saving = false; root.errorText = I18n.tr("Auswahl konnte nicht gespeichert werden."); }
     }
     Image {
         id: validation
@@ -132,7 +132,7 @@ ShellRoot {
         sourceSize.width: 32; sourceSize.height: 32
         onStatusChanged: {
             if (status === Image.Ready) root.commit();
-            else if (status === Image.Error) root.errorText = "Dieses Bild kann nicht geladen werden.";
+            else if (status === Image.Error) root.errorText = I18n.tr("Dieses Bild kann nicht geladen werden.");
         }
     }
     IpcHandler {
@@ -223,7 +223,7 @@ ShellRoot {
                     }
                     Text {
                         anchors.centerIn: parent; visible: !root.results.length
-                        text: scan.running ? "Bilder werden geladen …" : "Keine passenden Bilder gefunden"
+                        text: scan.running ? I18n.tr("Bilder werden geladen …") : I18n.tr("Keine passenden Bilder gefunden")
                         color: root.theme.textColor; font.family: root.theme.fontFamily
                     }
                 }
@@ -239,7 +239,7 @@ ShellRoot {
                     leftPadding: 16; rightPadding: 16
                     font.family: root.theme.fontFamily; font.pixelSize: 15
                     text: root.query; onTextChanged: root.query = text
-                    placeholderText: "Bilder filtern …"
+                    placeholderText: I18n.tr("Bilder filtern …")
                     color: root.theme.textColor; placeholderTextColor: root.theme.mutedColor
                     selectionColor: root.theme.accentColor; selectedTextColor: root.theme.backgroundColor
                     background: Rectangle { radius: height / 2; color: root.theme.glassColor; border.color: root.theme.glassBorderColor }
@@ -254,7 +254,7 @@ ShellRoot {
                 }
                 Text {
                     width: parent.width; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
-                    text: root.errorText || (root.saving ? "Wird gespeichert …" : (root.results.length ? root.selected + 1 : 0) + " / " + root.results.length + "  ·  ← → Auswahl  ·  ↵ Anwenden  ·  Esc")
+                    text: root.errorText || (root.saving ? I18n.tr("Wird gespeichert …") : I18n.tr("%1 / %2  ·  ← → Auswahl  ·  ↵ Anwenden  ·  Esc", root.results.length ? root.selected + 1 : 0, root.results.length))
                     color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 14
                 }
             }

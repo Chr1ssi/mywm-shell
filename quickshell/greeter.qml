@@ -70,12 +70,12 @@ ShellRoot {
             if (responseRequired) Greetd.respond(root.password);
             else if (error) root.message = message;
         }
-        function onAuthFailure(message: string): void { root.fail("Falsches Passwort"); }
+        function onAuthFailure(message: string): void { root.fail(I18n.tr("Falsches Passwort")); }
         // greetd also answers Quickshell's cancel after a failed attempt with an error; only one during an
         // attempt counts.
-        function onError(error: string): void { if (root.busy) root.fail("Anmeldung nicht möglich: " + error); }
+        function onError(error: string): void { if (root.busy) root.fail(I18n.tr("Anmeldung nicht möglich: %1", error)); }
         function onReadyToLaunch(): void {
-            root.message = "Sitzung startet …";
+            root.message = I18n.tr("Sitzung startet …");
             Greetd.launch(root.sessions[root.session].command);
         }
     }

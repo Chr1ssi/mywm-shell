@@ -25,11 +25,11 @@ Column {
     spacing: 14
 
     function deviceStatus(device): string {
-        if (device.pairing) return "Koppeln …";
-        if (device.state === BluetoothDeviceState.Connecting) return "Verbinden …";
-        if (device.state === BluetoothDeviceState.Disconnecting) return "Trennen …";
-        if (device.connected) return device.batteryAvailable ? "Verbunden · " + Math.round(device.battery * 100) + " %" : "Verbunden";
-        return device.paired ? "Gekoppelt" : "Neu";
+        if (device.pairing) return I18n.tr("Koppeln …");
+        if (device.state === BluetoothDeviceState.Connecting) return I18n.tr("Verbinden …");
+        if (device.state === BluetoothDeviceState.Disconnecting) return I18n.tr("Trennen …");
+        if (device.connected) return device.batteryAvailable ? I18n.tr("Verbunden · %1 %", Math.round(device.battery * 100)) : I18n.tr("Verbunden");
+        return device.paired ? I18n.tr("Gekoppelt") : I18n.tr("Neu");
     }
 
     function useDevice(device): void {
@@ -66,10 +66,10 @@ Column {
         Repeater {
             model: [
                 { key: "bluetooth", icon: panel.bluetoothOn ? (panel.connectedCount > 0 ? "󰂱" : "󰂯") : "󰂲", label: "Bluetooth",
-                  detail: panel.adapter === null ? "Kein Adapter" : !panel.bluetoothOn ? "Aus"
-                          : panel.connectedCount > 0 ? panel.connectedCount + " verbunden" : "An",
+                  detail: panel.adapter === null ? I18n.tr("Kein Adapter") : !panel.bluetoothOn ? I18n.tr("Aus")
+                          : panel.connectedCount > 0 ? I18n.tr("%1 verbunden", panel.connectedCount) : I18n.tr("An"),
                   active: panel.bluetoothOn, available: panel.adapter !== null },
-                { key: "night", icon: "󰖔", label: "Nachtlicht", detail: panel.nightLight ? "An" : "Aus",
+                { key: "night", icon: "󰖔", label: I18n.tr("Nachtlicht"), detail: panel.nightLight ? I18n.tr("An") : I18n.tr("Aus"),
                   active: panel.nightLight, available: true }
             ]
             Rectangle {
@@ -119,13 +119,13 @@ Column {
         width: parent.width
         spacing: 8
         Text {
-            text: "Netzwerk"
+            text: I18n.tr("Netzwerk")
             color: panel.theme.accentColor
             font.family: panel.theme.fontFamily; font.pixelSize: 15
         }
         Text {
             visible: panel.addresses.length === 0
-            text: "Keine Verbindung"
+            text: I18n.tr("Keine Verbindung")
             color: panel.theme.mutedColor
             font.family: panel.theme.fontFamily; font.pixelSize: 14
         }
@@ -144,7 +144,7 @@ Column {
                 }
                 Text {
                     anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter
-                    text: panel.copied === addressRow.modelData.address ? "Kopiert" : addressRow.modelData.address
+                    text: panel.copied === addressRow.modelData.address ? I18n.tr("Kopiert") : addressRow.modelData.address
                     color: panel.theme.textColor
                     font.family: panel.theme.fontFamily; font.pixelSize: 14
                 }
@@ -170,7 +170,7 @@ Column {
             width: parent.width; height: searchButton.height
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: "Geräte"
+                text: I18n.tr("Geräte")
                 color: panel.theme.accentColor
                 font.family: panel.theme.fontFamily; font.pixelSize: 15
             }
@@ -179,19 +179,19 @@ Column {
                 anchors.right: parent.right
                 visible: panel.bluetoothOn
                 theme: panel.theme
-                text: panel.adapter && panel.adapter.discovering ? "󰓛 Suche beenden" : "󰍉 Suchen"
+                text: panel.adapter && panel.adapter.discovering ? "󰓛 " + I18n.tr("Suche beenden") : "󰍉 " + I18n.tr("Suchen")
                 onClicked: panel.adapter.discovering = !panel.adapter.discovering
             }
         }
         Text {
             visible: !panel.bluetoothOn
-            text: "Bluetooth ist aus"
+            text: I18n.tr("Bluetooth ist aus")
             color: panel.theme.mutedColor
             font.family: panel.theme.fontFamily; font.pixelSize: 14
         }
         Text {
             visible: panel.bluetoothOn && panel.devices.length === 0
-            text: panel.adapter && panel.adapter.discovering ? "Suche läuft …" : "Keine gekoppelten Geräte"
+            text: panel.adapter && panel.adapter.discovering ? I18n.tr("Suche läuft …") : I18n.tr("Keine gekoppelten Geräte")
             color: panel.theme.mutedColor
             font.family: panel.theme.fontFamily; font.pixelSize: 14
         }
@@ -226,7 +226,7 @@ Column {
                     anchors.verticalCenter: parent.verticalCenter
                     theme: panel.theme
                     enabled: !deviceRow.modelData.pairing
-                    text: deviceRow.modelData.connected ? "Trennen" : deviceRow.modelData.paired ? "Verbinden" : "Koppeln"
+                    text: deviceRow.modelData.connected ? I18n.tr("Trennen") : deviceRow.modelData.paired ? I18n.tr("Verbinden") : I18n.tr("Koppeln")
                     onClicked: panel.useDevice(deviceRow.modelData)
                 }
             }

@@ -36,9 +36,10 @@ class Session:
         self.config = self.base / "mywm.toml"
         # Top-level keys must precede the first table.
         self.config.write_text("xwayland = false\n" + config)
+        # The shell speaks the system language; the tests expect German unless `env` sets another LANG.
         self.env = {key: value for key, value in os.environ.items()
-                    if not key.startswith("MYWM_") and key not in ("WAYLAND_DISPLAY", "WAYLAND_SOCKET")}
-        self.env.update(MYWM_SHELL_DIR=str(SHELL_ROOT / "quickshell"), MYWM_CONFIG=str(self.config),
+                    if not key.startswith(("MYWM_", "LC_")) and key not in ("WAYLAND_DISPLAY", "WAYLAND_SOCKET", "LANGUAGE")}
+        self.env.update(LANG="de_DE.UTF-8", MYWM_SHELL_DIR=str(SHELL_ROOT / "quickshell"), MYWM_CONFIG=str(self.config),
                         MYWM_SOCKET=str(runtime / "control.sock"), MYWM_LOG_FILE="off",
                         MYWM_VIRTUAL_OUTPUTS=str(outputs - 1), RUST_LOG="info",
                         XDG_RUNTIME_DIR=str(runtime), XDG_CONFIG_HOME=str(self.base / "config"),

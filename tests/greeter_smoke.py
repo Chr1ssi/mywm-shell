@@ -26,8 +26,9 @@ def main():
                                    str(greetd_log)])
         wait_for(lambda: "ready" in greetd_log.read_text())
         greeter = f"qs --path {SHELL_ROOT / 'quickshell' / 'greeter.qml'}"
+        # An English system: the login screen speaks it (the lock test covers German).
         env = {"GREETD_SOCK": str(base / "greetd.sock"), "MYWM_GREETER_USER": USER,
-               "MYWM_GREETER_SESSIONS": str(sessions)}
+               "MYWM_GREETER_SESSIONS": str(sessions), "LANG": "en_US.UTF-8"}
         try:
             # Two monitors: the login screen is on both, and typing works wherever the keyboard goes.
             with Session(base, outputs=2, env=env, args=["--greeter", greeter]) as session:
@@ -79,7 +80,7 @@ def main():
                 assert colors("virtual-1") == 1, "the second monitor shows more than the background"
 
                 type_password("falsch")
-                wait_for(lambda: ipc("message") == "Falsches Passwort")
+                wait_for(lambda: ipc("message") == "Wrong password")
                 # Quickshell ends the failed session itself (cancel_session).
                 assert requests()[1:3] == [f"create_session {USER}", "response wrong"], requests()
                 print("wrong password OK")

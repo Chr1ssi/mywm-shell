@@ -42,12 +42,12 @@ ShellRoot {
             }
             root.password = "";
             root.failed = true;
-            root.message = result === PamResult.MaxTries ? "Zu viele Versuche" : "Falsches Passwort";
+            root.message = result === PamResult.MaxTries ? I18n.tr("Zu viele Versuche") : I18n.tr("Falsches Passwort");
         }
         onError: error => {
             root.password = "";
             root.failed = true;
-            root.message = "Anmeldung nicht möglich (" + PamError.toString(error) + ")";
+            root.message = I18n.tr("Anmeldung nicht möglich (%1)", PamError.toString(error));
         }
     }
 

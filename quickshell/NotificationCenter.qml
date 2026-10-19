@@ -20,13 +20,13 @@ Column {
         spacing: 8
         Text {
             width: parent.width - clearButton.width - 8
-            text: center.notifications.length + (center.notifications.length === 1 ? " Benachrichtigung" : " Benachrichtigungen")
+            text: center.notifications.length === 1 ? I18n.tr("1 Benachrichtigung") : I18n.tr("%1 Benachrichtigungen", center.notifications.length)
             color: center.theme.textColor
             font.family: center.theme.fontFamily; font.pixelSize: 15
         }
         BarButton {
             id: clearButton
-            theme: center.theme; text: "Alle löschen"
+            theme: center.theme; text: I18n.tr("Alle löschen")
             enabled: center.notifications.length > 0
             onClicked: center.clearAll()
         }
@@ -51,7 +51,7 @@ Column {
         Text {
             anchors.centerIn: parent
             visible: center.notifications.length === 0
-            text: "Keine Benachrichtigungen"
+            text: I18n.tr("Keine Benachrichtigungen")
             color: center.theme.mutedColor
             font.family: center.theme.fontFamily; font.pixelSize: 14
         }

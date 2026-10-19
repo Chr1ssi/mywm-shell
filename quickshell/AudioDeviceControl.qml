@@ -83,8 +83,8 @@ Column {
         BarButton {
             theme: control.theme; width: 78
             text: control.hasNativeAudio
-                ? (control.audio.muted ? "Stumm" : Math.round(control.audio.volume * 100) + " %")
-                : !control.fallbackLoaded ? "…" : control.fallbackMuted ? "Stumm" : Math.round(control.fallbackVolume * 100) + " %"
+                ? (control.audio.muted ? I18n.tr("Stumm") : Math.round(control.audio.volume * 100) + " %")
+                : !control.fallbackLoaded ? "…" : control.fallbackMuted ? I18n.tr("Stumm") : Math.round(control.fallbackVolume * 100) + " %"
             enabled: control.hasNativeAudio || control.fallbackLoaded
             onClicked: control.toggleMute()
         }

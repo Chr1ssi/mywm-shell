@@ -59,7 +59,7 @@ Column {
         const end = endField.text.trim();
         if (!title || !/^\d\d:\d\d$/.test(start) || !/^\d\d:\d\d$/.test(end)
                 || end <= start || calendarBox.currentText === "") {
-            errorText = "Bitte Titel sowie gültige Start- und Endzeit eingeben.";
+            errorText = I18n.tr("Bitte Titel sowie gültige Start- und Endzeit eingeben.");
             return;
         }
         createProcess.command = ["mywm-calendar", "create", calendarBox.currentText,
@@ -75,11 +75,11 @@ Column {
         stdout: StdioCollector {
             onStreamFinished: {
                 try { panel.events = JSON.parse(text || "[]"); panel.errorText = ""; }
-                catch (_) { panel.events = []; panel.errorText = "Termine konnten nicht gelesen werden."; }
+                catch (_) { panel.events = []; panel.errorText = I18n.tr("Termine konnten nicht gelesen werden."); }
             }
         }
         onExited: (exitCode, exitStatus) => {
-            if (exitCode !== 0) panel.errorText = "Kalender ist noch nicht eingerichtet.";
+            if (exitCode !== 0) panel.errorText = I18n.tr("Kalender ist noch nicht eingerichtet.");
         }
     }
     Process {
@@ -97,7 +97,7 @@ Column {
         onExited: (exitCode, exitStatus) => {
             if (exitCode === 0) {
                 titleField.text = ""; locationField.text = ""; panel.createOpen = false; panel.reload();
-            } else panel.errorText = "Der Termin konnte nicht erstellt werden.";
+            } else panel.errorText = I18n.tr("Der Termin konnte nicht erstellt werden.");
         }
     }
 
@@ -107,7 +107,7 @@ Column {
         Text {
             width: parent.width - 96; anchors.verticalCenter: parent.verticalCenter
             horizontalAlignment: Text.AlignHCenter
-            text: panel.shownMonth.toLocaleString(Qt.locale("de_DE"), "MMMM yyyy")
+            text: panel.shownMonth.toLocaleString(Qt.locale(), "MMMM yyyy")
             color: panel.theme.textColor; font.family: panel.theme.fontFamily; font.pixelSize: 18
         }
         BarButton { theme: panel.theme; text: "›"; onClicked: panel.shiftMonth(1) }
@@ -116,7 +116,7 @@ Column {
     Grid {
         width: parent.width; columns: 7; rowSpacing: 3; columnSpacing: 3
         Repeater {
-            model: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+            model: [1, 2, 3, 4, 5, 6, 0].map(day => Qt.locale().standaloneDayName(day, Locale.ShortFormat))
             Text {
                 required property string modelData
                 width: (panel.width - 18) / 7; height: 22
@@ -167,7 +167,7 @@ Column {
         width: parent.width; spacing: 8
         Text {
             width: parent.width - 104
-            text: "Termine am " + panel.selectedDate.toLocaleString(Qt.locale("de_DE"), "dd. MMMM")
+            text: I18n.tr("Termine am %1", panel.selectedDate.toLocaleString(Qt.locale(), "dd. MMMM"))
             color: panel.theme.textColor; font.family: panel.theme.fontFamily; font.pixelSize: 16
         }
         BarButton { theme: panel.theme; text: "+"; selected: panel.createOpen; onClicked: panel.createOpen = !panel.createOpen }
@@ -176,17 +176,17 @@ Column {
 
     Column {
         visible: panel.createOpen; width: parent.width; spacing: 8
-        TextField { id: titleField; width: parent.width; placeholderText: "Titel" }
+        TextField { id: titleField; width: parent.width; placeholderText: I18n.tr("Titel") }
         Row {
             width: parent.width; spacing: 8
             TextField { id: startField; width: (parent.width - 8) / 2; text: "09:00"; placeholderText: "Start (HH:MM)" }
-            TextField { id: endField; width: (parent.width - 8) / 2; text: "10:00"; placeholderText: "Ende (HH:MM)" }
+            TextField { id: endField; width: (parent.width - 8) / 2; text: "10:00"; placeholderText: I18n.tr("Ende (HH:MM)") }
         }
-        TextField { id: locationField; width: parent.width; placeholderText: "Ort (optional)" }
+        TextField { id: locationField; width: parent.width; placeholderText: I18n.tr("Ort (optional)") }
         ComboBox { id: calendarBox; width: parent.width; model: panel.calendars; textRole: "name"; valueRole: "name" }
         BarButton {
             width: parent.width; theme: panel.theme
-            text: createProcess.running ? "Wird gespeichert …" : "Termin erstellen"
+            text: createProcess.running ? I18n.tr("Wird gespeichert …") : I18n.tr("Termin erstellen")
             enabled: !createProcess.running; onClicked: panel.submitEvent()
         }
     }
@@ -213,12 +213,12 @@ Column {
                 Column {
                     id: eventColumn; width: parent.width - 13; spacing: 2
                     Text {
-                        width: parent.width; text: modelData.title || "(Ohne Titel)"; elide: Text.ElideRight
+                        width: parent.width; text: modelData.title || I18n.tr("(Ohne Titel)"); elide: Text.ElideRight
                         color: panel.theme.textColor; font.family: panel.theme.fontFamily; font.pixelSize: 15
                     }
                     Text {
                         width: parent.width
-                        text: (modelData.allDay ? "Ganztägig" : modelData.startTime + "–" + modelData.endTime)
+                        text: (modelData.allDay ? I18n.tr("Ganztägig") : modelData.startTime + "–" + modelData.endTime)
                             + "  ·  " + modelData.calendar
                             + (modelData.location ? "  ·  " + modelData.location : "")
                         elide: Text.ElideRight; color: panel.theme.mutedColor
@@ -230,12 +230,12 @@ Column {
     }
     Text {
         visible: panel.errorText === "" && panel.selectedEvents().length === 0; width: parent.width
-        text: "Keine Termine an diesem Tag."; color: panel.theme.mutedColor
+        text: I18n.tr("Keine Termine an diesem Tag."); color: panel.theme.mutedColor
         font.family: panel.theme.fontFamily; font.pixelSize: 14
     }
     Rectangle { width: parent.width; height: 1; color: panel.theme.borderColor }
     Text {
-        width: parent.width; text: "Nächste Termine"
+        width: parent.width; text: I18n.tr("Nächste Termine")
         color: panel.theme.textColor
         font.family: panel.theme.fontFamily; font.pixelSize: 16
     }
@@ -256,13 +256,13 @@ Column {
                 Column {
                     id: upcomingColumn; width: parent.width - 13; spacing: 2
                     Text {
-                        width: parent.width; text: modelData.title || "(Ohne Titel)"; elide: Text.ElideRight
+                        width: parent.width; text: modelData.title || I18n.tr("(Ohne Titel)"); elide: Text.ElideRight
                         color: panel.theme.textColor; font.family: panel.theme.fontFamily; font.pixelSize: 15
                     }
                     Text {
                         width: parent.width
                         text: modelData.startDate.split("-").reverse().slice(0, 2).join(".") + ".  ·  "
-                            + (modelData.allDay ? "Ganztägig" : modelData.startTime + "–" + modelData.endTime)
+                            + (modelData.allDay ? I18n.tr("Ganztägig") : modelData.startTime + "–" + modelData.endTime)
                             + "  ·  " + modelData.calendar
                         elide: Text.ElideRight; color: panel.theme.mutedColor
                         font.family: panel.theme.fontFamily; font.pixelSize: 13
@@ -273,11 +273,11 @@ Column {
     }
     Text {
         visible: panel.errorText === "" && panel.upcomingEvents().length === 0; width: parent.width
-        text: "Keine anstehenden Termine im geladenen Zeitraum."; color: panel.theme.mutedColor
+        text: I18n.tr("Keine anstehenden Termine im geladenen Zeitraum."); color: panel.theme.mutedColor
         font.family: panel.theme.fontFamily; font.pixelSize: 14
     }
     BarButton {
-        width: panel.width; theme: panel.theme; text: "Kalender-App öffnen"
-        onClicked: Quickshell.execDetached(["foot", "--app-id", "mywm-calendar", "--title", "Kalender", "mywm-calendar", "app"])
+        width: panel.width; theme: panel.theme; text: I18n.tr("Kalender-App öffnen")
+        onClicked: Quickshell.execDetached(["foot", "--app-id", "mywm-calendar", "--title", I18n.tr("Kalender"), "mywm-calendar", "app"])
     }
 }

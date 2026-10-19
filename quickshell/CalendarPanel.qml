@@ -34,7 +34,7 @@ Column {
     }
     function eventTime(value: string): string {
         const match = value.match(/(?:^|\s)(\d\d:\d\d)(?::\d\d)?$/);
-        return match ? match[1] : "Ganztägig";
+        return match ? match[1] : I18n.tr("Ganztägig");
     }
 
     Component.onCompleted: reload()
@@ -49,12 +49,12 @@ Column {
                     panel.errorText = "";
                 } catch (_) {
                     panel.events = [];
-                    panel.errorText = "Termine konnten nicht gelesen werden.";
+                    panel.errorText = I18n.tr("Termine konnten nicht gelesen werden.");
                 }
             }
         }
         onExited: (exitCode, exitStatus) => {
-            if (exitCode !== 0) panel.errorText = "Kalender ist noch nicht eingerichtet.";
+            if (exitCode !== 0) panel.errorText = I18n.tr("Kalender ist noch nicht eingerichtet.");
         }
     }
 
@@ -66,7 +66,7 @@ Column {
             width: parent.width - 96
             anchors.verticalCenter: parent.verticalCenter
             horizontalAlignment: Text.AlignHCenter
-            text: panel.shownMonth.toLocaleString(Qt.locale("de_DE"), "MMMM yyyy")
+            text: panel.shownMonth.toLocaleString(Qt.locale(), "MMMM yyyy")
             color: panel.theme.textColor
             font.family: panel.theme.fontFamily; font.pixelSize: 18
         }
@@ -79,7 +79,7 @@ Column {
         rowSpacing: 3
         columnSpacing: 3
         Repeater {
-            model: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+            model: [1, 2, 3, 4, 5, 6, 0].map(day => Qt.locale().standaloneDayName(day, Locale.ShortFormat))
             Text {
                 required property string modelData
                 width: (panel.width - 18) / 7; height: 22
@@ -109,7 +109,7 @@ Column {
     Row {
         width: parent.width
         Text {
-            width: parent.width - 48; text: "Nächste Termine"
+            width: parent.width - 48; text: I18n.tr("Nächste Termine")
             color: panel.theme.textColor
             font.family: panel.theme.fontFamily; font.pixelSize: 16
         }
@@ -140,7 +140,7 @@ Column {
                     width: parent.width - 13
                     spacing: 2
                     Text {
-                        width: parent.width; text: modelData.title || "(Ohne Titel)"; elide: Text.ElideRight
+                        width: parent.width; text: modelData.title || I18n.tr("(Ohne Titel)"); elide: Text.ElideRight
                         color: panel.theme.textColor
                         font.family: panel.theme.fontFamily; font.pixelSize: 15
                     }
@@ -158,11 +158,11 @@ Column {
     }
     Text {
         visible: panel.errorText === "" && panel.events.length === 0; width: parent.width
-        text: "Keine Termine in den nächsten 31 Tagen."; color: panel.theme.mutedColor
+        text: I18n.tr("Keine Termine in den nächsten 31 Tagen."); color: panel.theme.mutedColor
         font.family: panel.theme.fontFamily; font.pixelSize: 14
     }
     BarButton {
-        width: panel.width; theme: panel.theme; text: "Kalender-App öffnen"
-        onClicked: Quickshell.execDetached(["foot", "--app-id", "mywm-calendar", "--title", "Kalender", "mywm-calendar", "app"])
+        width: panel.width; theme: panel.theme; text: I18n.tr("Kalender-App öffnen")
+        onClicked: Quickshell.execDetached(["foot", "--app-id", "mywm-calendar", "--title", I18n.tr("Kalender"), "mywm-calendar", "app"])
     }
 }

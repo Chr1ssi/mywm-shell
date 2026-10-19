@@ -50,7 +50,7 @@ ShellRoot {
     property var notifications: []
     property var toastNotifications: []
     property var closedNotificationIds: []
-    property string clockText: clock.date.toLocaleString(Qt.locale("de_DE"), "ddd dd. MMM  HH:mm")
+    property string clockText: clock.date.toLocaleString(Qt.locale(), "ddd dd. MMM  HH:mm")
     SystemClock { id: clock; precision: SystemClock.Minutes }
     property var sink: Pipewire.defaultAudioSink
     property var audio: sink ? sink.audio : null
@@ -268,9 +268,9 @@ ShellRoot {
             property string errorText: ""
             property real countdownProgress: 1
             readonly property var powerActions: ({
-                logout: { title: "Abmelden", icon: "󰍃" },
-                reboot: { title: "Neu starten", icon: "󰜉" },
-                poweroff: { title: "Ausschalten", icon: "⏻" }
+                logout: { title: I18n.tr("Abmelden"), icon: "󰍃" },
+                reboot: { title: I18n.tr("Neu starten"), icon: "󰜉" },
+                poweroff: { title: I18n.tr("Ausschalten"), icon: "⏻" }
             })
             function choosePower(action: string): void {
                 if (!["logout", "reboot", "poweroff"].includes(action)) return;
@@ -320,7 +320,7 @@ ShellRoot {
                 if (!item.hasMenu || !item.menu) return;
                 activePanel = "";
                 menuOpen = false;
-                trayMenuTitle = item.title || item.id || "Anwendung";
+                trayMenuTitle = item.title || item.id || I18n.tr("Anwendung");
                 trayMenu = item.menu;
             }
             anchors { top: true; left: true; right: true }
@@ -401,7 +401,7 @@ ShellRoot {
                         height: 26
                         leftPadding: 8; rightPadding: 8
                         verticalAlignment: Text.AlignVCenter
-                        text: "󰑊 Aufnahme"
+                        text: "󰑊 " + I18n.tr("Aufnahme")
                         color: root.theme.alertColor
                         font.family: root.theme.fontFamily; font.pixelSize: 14; font.bold: true
                     }
@@ -453,7 +453,7 @@ ShellRoot {
                     }
                     BarButton {
                         theme: root.theme
-                        text: !root.audio ? "󰕾 —" : root.audio.muted ? "󰖁 Stumm" : "󰕾 " + Math.round(root.audio.volume * 100) + " %"
+                        text: !root.audio ? "󰕾 —" : root.audio.muted ? "󰖁 " + I18n.tr("Stumm") : "󰕾 " + Math.round(root.audio.volume * 100) + " %"
                         selected: bar.activePanel === "audio"
                         onClicked: bar.activePanel = selected ? "" : "audio"
                         onSecondaryClicked: root.toggleMute()
@@ -480,7 +480,7 @@ ShellRoot {
                 onExited: (exitCode, exitStatus) => {
                     if (exitCode !== 0) {
                         bar.pending = "";
-                        bar.errorText = "Aktion fehlgeschlagen (" + exitCode + ")";
+                        bar.errorText = I18n.tr("Aktion fehlgeschlagen (%1)", exitCode);
                     }
                     else bar.menuOpen = false;
                 }
@@ -558,7 +558,7 @@ ShellRoot {
                             width: parent.width
                             Text {
                                 width: parent.width
-                                text: bar.activePanel === "audio" ? "Audio" : bar.activePanel === "control" ? "Commandcenter" : bar.activePanel === "media" ? "Medien" : bar.activePanel === "calendar" ? "Kalender" : "Benachrichtigungen"
+                                text: bar.activePanel === "audio" ? "Audio" : bar.activePanel === "control" ? I18n.tr("Commandcenter") : bar.activePanel === "media" ? I18n.tr("Medien") : bar.activePanel === "calendar" ? I18n.tr("Kalender") : I18n.tr("Benachrichtigungen")
                                 color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 20
                             }
                         }
@@ -647,14 +647,14 @@ ShellRoot {
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
                             visible: bar.pending === ""
-                            text: "Sitzung und System"
+                            text: I18n.tr("Sitzung und System")
                             color: root.theme.textColor; font.family: root.theme.fontFamily; font.pixelSize: 22
                         }
                         Row {
                             visible: bar.pending === ""
                             width: parent.width; spacing: 12
                             Repeater {
-                                model: [{label: "Sperren", icon: "󰌾", action: "lock"}, {label: "Abmelden", icon: "󰍃", action: "logout"}, {label: "Neustart", icon: "󰜉", action: "reboot"}, {label: "Ausschalten", icon: "⏻", action: "poweroff"}]
+                                model: [{label: I18n.tr("Sperren"), icon: "󰌾", action: "lock"}, {label: I18n.tr("Abmelden"), icon: "󰍃", action: "logout"}, {label: I18n.tr("Neustart"), icon: "󰜉", action: "reboot"}, {label: I18n.tr("Ausschalten"), icon: "⏻", action: "poweroff"}]
                                 Rectangle {
                                     id: powerTile
                                     required property var modelData
@@ -725,20 +725,20 @@ ShellRoot {
                             }
                             Text {
                                 anchors.horizontalCenter: parent.horizontalCenter
-                                text: "Automatisch in " + Math.max(1, Math.ceil(bar.countdownProgress * 5)) + " Sekunden"
+                                text: I18n.tr("Automatisch in %1 Sekunden", Math.max(1, Math.ceil(bar.countdownProgress * 5)))
                                 color: root.theme.mutedColor
                                 font.family: root.theme.fontFamily; font.pixelSize: 14
                             }
                             BarButton {
                                 anchors.horizontalCenter: parent.horizontalCenter
-                                theme: root.theme; text: "Abbrechen"; height: 40
+                                theme: root.theme; text: I18n.tr("Abbrechen"); height: 40
                                 onClicked: bar.cancelPower()
                             }
                         }
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
                             visible: bar.pending === "" || bar.errorText !== ""
-                            text: bar.errorText || "Esc zum Schließen"
+                            text: bar.errorText || I18n.tr("Esc zum Schließen")
                             color: root.theme.mutedColor; font.family: root.theme.fontFamily; font.pixelSize: 14
                         }
                     }
@@ -785,13 +785,13 @@ ShellRoot {
                         anchors { left: parent.left; right: parent.right; top: parent.top; margins: 12 }
                         spacing: 4
                         Text {
-                            text: "󰑊 Was soll geteilt werden?"
+                            text: "󰑊 " + I18n.tr("Was soll geteilt werden?")
                             color: root.theme.textColor
                             font.family: root.theme.fontFamily; font.pixelSize: 15; font.bold: true
                         }
                         Text {
                             width: parent.width
-                            text: "Fenster anklicken · Kachel daneben oder Enter: ganzer Monitor · D: dynamisch, mit den Cast-Tasten umschaltbar · Esc: abbrechen"
+                            text: I18n.tr("Fenster anklicken · Kachel daneben oder Enter: ganzer Monitor · D: dynamisch, mit den Cast-Tasten umschaltbar · Esc: abbrechen")
                             wrapMode: Text.Wrap
                             color: root.theme.textColor
                             font.family: root.theme.fontFamily; font.pixelSize: 13
@@ -818,13 +818,13 @@ ShellRoot {
                         anchors { left: pickedSwatch.right; leftMargin: 12; right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
                         spacing: 4
                         Text {
-                            text: "󰈊 " + (root.pickedColor || "Farbpipette")
+                            text: "󰈊 " + (root.pickedColor || I18n.tr("Farbpipette"))
                             color: root.theme.textColor
                             font.family: root.theme.fontFamily; font.pixelSize: 15; font.bold: true
                         }
                         Text {
                             width: parent.width
-                            text: "Klick kopiert die Farbe · Esc: abbrechen"
+                            text: I18n.tr("Klick kopiert die Farbe · Esc: abbrechen")
                             wrapMode: Text.Wrap
                             color: root.theme.mutedColor
                             font.family: root.theme.fontFamily; font.pixelSize: 13
@@ -848,7 +848,7 @@ ShellRoot {
                             spacing: 8
                             Text {
                                 width: parent.width - configClose.width - 8
-                                text: "Konfiguration fehlerhaft"
+                                text: I18n.tr("Konfiguration fehlerhaft")
                                 color: root.theme.textColor
                                 font.family: root.theme.fontFamily; font.pixelSize: 15; font.bold: true
                             }
@@ -867,7 +867,7 @@ ShellRoot {
                         }
                         Text {
                             width: parent.width
-                            text: "Bis zur Korrektur gilt die zuletzt geladene Konfiguration, beim Start die Standardwerte."
+                            text: I18n.tr("Bis zur Korrektur gilt die zuletzt geladene Konfiguration, beim Start die Standardwerte.")
                             wrapMode: Text.Wrap
                             color: root.theme.mutedColor
                             font.family: root.theme.fontFamily; font.pixelSize: 12
