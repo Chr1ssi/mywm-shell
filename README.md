@@ -51,6 +51,7 @@ nix develop -c tests/run-smoke bar launcher # einzelne
 Die Tests starten echtes Quickshell aus diesem Repository in abgeschotteten,
 nested MyWM-Smithay-Sitzungen: ein eigenes Xvfb, ein eigener D-Bus ohne
 Dienst-Aktivierung, eigene Laufzeit-, Konfigurations- und Statusverzeichnisse.
+Vier Tests laufen gleichzeitig, jeder auf seinem Xvfb (`MYWM_SMOKE_JOBS`, `1`: nacheinander).
 Die laufende Sitzung bleibt unberührt. Der Compositor ist das Nix-Paket des
 MyWM-Smithay-Checkouts daneben (`MYWM_SOURCE_DIR` für einen anderen Pfad,
 `MYWM_TEST_BINARY` für ein anderes Binary). Gedrehte Ausgänge prüft der

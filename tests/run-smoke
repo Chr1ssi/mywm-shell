@@ -9,6 +9,9 @@
 # (MYWM_SOURCE_DIR: another checkout); MYWM_TEST_BINARY overrides it. (Not MYWM_BINARY: a running
 # mywm session exports that for itself.) The shell under test is always
 # this repository's quickshell/ directory.
+#
+# The tests run side by side, each on an X server of its own (pointer, focus and keys are per server);
+# MYWM_SMOKE_JOBS sets how many (default 4, 1 runs them one after the other).
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
@@ -32,19 +35,29 @@ if [ ${#tests[@]} -eq 0 ]; then
     done
 fi
 
-# Xvfb picks a free display number and reports it on the given descriptor.
-exec {display_fd}<> <(:)
-Xvfb -displayfd "$display_fd" -screen 0 1280x800x24 +extension GLX >/dev/null 2>&1 &
-xvfb=$!
-trap 'kill "$xvfb" 2>/dev/null' EXIT
-read -r -t 10 -u "$display_fd" display_number || { echo 'Xvfb did not start' >&2; exit 1; }
-export DISPLAY=":$display_number" PYTHONPATH=tests
+jobs=${MYWM_SMOKE_JOBS:-4}
+[ "$jobs" -gt ${#tests[@]} ] && jobs=${#tests[@]}
+
+results=$(mktemp -d)
+servers=()
+trap 'kill "${servers[@]}" 2>/dev/null; rm -rf "$results"' EXIT
+# The free X servers, by display number: a test takes one and hands it back when it ends.
+exec {pool}<> <(:)
+for _ in $(seq "$jobs"); do
+    # Xvfb picks a free display number and reports it on the given descriptor.
+    exec {display_fd}<> <(:)
+    Xvfb -displayfd "$display_fd" -screen 0 1280x800x24 +extension GLX >/dev/null 2>&1 &
+    servers+=($!)
+    read -r -t 10 -u "$display_fd" display_number || { echo 'Xvfb did not start' >&2; exit 1; }
+    exec {display_fd}>&-
+    echo "$display_number" >&"$pool"
+done
+export PYTHONPATH=tests
 unset WAYLAND_DISPLAY
 
 # A session bus without service directories: nothing is activated on demand (portals would outlive
 # the test), and the shell's notification server does not meet the real session's.
-bus_config=$(mktemp --suffix=.conf)
-trap 'kill "$xvfb" 2>/dev/null; rm -f "$bus_config"' EXIT
+bus_config="$results/bus.conf"
 cat >"$bus_config" <<'BUS'
 <!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN"
  "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
@@ -60,17 +73,29 @@ cat >"$bus_config" <<'BUS'
 </busconfig>
 BUS
 
+run() {
+    local name=$1 display=$2 result=ok
+    DISPLAY=":$display" timeout 300 dbus-run-session --config-file="$bus_config" -- python3 "tests/${name}_smoke.py" \
+        >"$results/$name.log" 2>&1 || result=FAILED
+    echo "$result" >"$results/$name.result"
+    printf '%-10s%s\n' "$name" "$result"
+    echo "$display" >&"$pool"
+}
+
+running=()
+for name in "${tests[@]}"; do
+    read -r -u "$pool" display
+    run "$name" "$display" &
+    running+=($!)
+done
+# Only the tests: the X servers run on until the end.
+wait "${running[@]}"
+
 failed=()
 for name in "${tests[@]}"; do
-    log=$(mktemp)
-    printf '%-10s' "$name"
-    if timeout 300 dbus-run-session --config-file="$bus_config" -- python3 "tests/${name}_smoke.py" >"$log" 2>&1; then
-        echo ok
-    else
-        echo FAILED
-        tail -n 15 "$log" | sed 's/^/    /'
-        failed+=("$name")
-    fi
-    rm -f "$log"
+    [ "$(cat "$results/$name.result")" = ok ] && continue
+    failed+=("$name")
+    echo "$name:"
+    tail -n 15 "$results/$name.log" | sed 's/^/    /'
 done
 [ ${#failed[@]} -eq 0 ]
